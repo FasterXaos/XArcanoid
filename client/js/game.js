@@ -65,7 +65,18 @@ const xarcanoid_game = (() => {
         return running;
     }
 
+    function is_typing_in_field(event) {
+        const target = event.target;
+        if (!target || typeof target.closest !== "function") {
+            return false;
+        }
+        return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+    }
+
     function on_key_down(event) {
+        if (is_typing_in_field(event)) {
+            return;
+        }
         if (event.code === "ArrowLeft" || event.code === "KeyA") {
             keys.left = true;
             mouse_x = null;
@@ -85,6 +96,9 @@ const xarcanoid_game = (() => {
     }
 
     function on_key_up(event) {
+        if (is_typing_in_field(event)) {
+            return;
+        }
         if (event.code === "ArrowLeft" || event.code === "KeyA") {
             keys.left = false;
         }
