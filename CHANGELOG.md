@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-09-14
+
+### Added
+
+- Toggle buttons next to the language switch for a generated chiptune OST and short game SFX.
+- In-game guide (i) with controls, scoring, difficulties, and the project changelog.
+- Settings gear: music/SFX mutes, volume sliders, and theme picker (moved off the main panel).
+
+### Fixed
+
+- SFX never played because they were looked up on `window` (script `const` is not a window property); hits now use soft distinct tones.
+- Theme changes now recolor the court, bricks, paddle, highlight, and a contrasting frame (Night Arcade stays the original look).
+
 ## [0.4.1] - 2026-09-14
 
 ### Added

@@ -17,15 +17,37 @@
 
         <div class="layout">
             <aside class="panel">
-                <button type="button" id="lang_btn" class="lang_btn" aria-label="Язык">
-                    <span data-lang="ru">RU</span>
-                    <span data-lang="en">EN</span>
-                </button>
-
-                <label class="theme_picker">
-                    <span data-i18n="theme">Тема</span>
-                    <select id="theme_select"></select>
-                </label>
+                <div class="toolbar_row">
+                    <button type="button" id="lang_btn" class="lang_btn" aria-label="Язык">
+                        <span data-lang="ru">RU</span>
+                        <span data-lang="en">EN</span>
+                    </button>
+                    <button type="button" id="music_btn" class="icon_btn" aria-pressed="true" aria-label="Music">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 18V6l12-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                            <circle cx="7" cy="18" r="3" fill="currentColor"/>
+                            <circle cx="19" cy="16" r="3" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button type="button" id="sfx_btn" class="icon_btn" aria-pressed="true" aria-label="Sound">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/>
+                            <path d="M16 8.5a4.5 4.5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <button type="button" id="help_btn" class="icon_btn" aria-label="Help">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <text x="12" y="16" text-anchor="middle" font-size="12" font-family="Segoe UI, sans-serif" fill="currentColor">i</text>
+                        </svg>
+                    </button>
+                    <button type="button" id="settings_btn" class="icon_btn" aria-label="Settings">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <path d="M19.4 13a7.8 7.8 0 0 0 .1-2l2-1.5-2-3.5-2.4 1a7.4 7.4 0 0 0-1.7-1L15 4h-6l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.8 7.8 0 0 0 .1 2l-2 1.5 2 3.5 2.4-1a7.4 7.4 0 0 0 1.7 1L9 20h6l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                        </svg>
+                    </button>
+                </div>
 
                 <label class="theme_picker">
                     <span data-i18n="difficulty">Сложность</span>
@@ -91,7 +113,64 @@
         </div>
     </div>
 
+    <div id="help_modal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal_card modal_card_wide">
+            <div class="modal_head">
+                <h2 data-i18n="help_title">Гайд</h2>
+                <button type="button" class="icon_btn modal_close" data-close="help_modal" aria-label="Close">×</button>
+            </div>
+            <div class="modal_body">
+                <h3 data-i18n="guide_concept_title">Концепт</h3>
+                <p data-i18n="guide_concept"></p>
+                <h3 data-i18n="guide_controls_title">Управление</h3>
+                <p data-i18n="guide_controls"></p>
+                <h3 data-i18n="guide_rules_title">Правила</h3>
+                <p data-i18n="guide_rules"></p>
+                <h3 data-i18n="guide_diff_title">Сложность</h3>
+                <p data-i18n="guide_diff"></p>
+                <h3 data-i18n="guide_score_title">Счёт и комбо</h3>
+                <p data-i18n="guide_score"></p>
+                <h3 data-i18n="guide_extra_title">Ещё</h3>
+                <p data-i18n="guide_extra"></p>
+                <h3 data-i18n="guide_log_title">Журнал изменений</h3>
+                <pre id="changelog_text" class="changelog_text"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings_modal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal_card">
+            <div class="modal_head">
+                <h2 data-i18n="settings_title">Настройки</h2>
+                <button type="button" class="icon_btn modal_close" data-close="settings_modal" aria-label="Close">×</button>
+            </div>
+            <div class="modal_body">
+                <label class="setting_row">
+                    <input type="checkbox" id="settings_music_on">
+                    <span data-i18n="settings_music">Музыка</span>
+                </label>
+                <label class="setting_slider">
+                    <span data-i18n="settings_music_vol">Громкость музыки</span>
+                    <input type="range" id="settings_music_vol" min="0" max="100" value="100">
+                </label>
+                <label class="setting_row">
+                    <input type="checkbox" id="settings_sfx_on">
+                    <span data-i18n="settings_sfx">Звуки</span>
+                </label>
+                <label class="setting_slider">
+                    <span data-i18n="settings_sfx_vol">Громкость звуков</span>
+                    <input type="range" id="settings_sfx_vol" min="0" max="100" value="100">
+                </label>
+                <label class="theme_picker">
+                    <span data-i18n="theme">Тема</span>
+                    <select id="theme_select"></select>
+                </label>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/i18n.js"></script>
+    <script src="/js/audio.js"></script>
     <script src="/js/themes.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/game.js"></script>

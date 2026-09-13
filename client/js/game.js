@@ -3,9 +3,12 @@ const xarcanoid_game = (() => {
     const default_theme = {
         bg: "#070b12",
         wall: "#1c2a3d",
+        frame: "#1c2a3d",
         paddle: "#d9e4f5",
+        paddle_glow: "#ffffff",
         paddle_stripe: "#ff8a3d",
         ball: "#f4fbff",
+        classic: true,
         bricks: ["#ff5d6c", "#ff8a3d", "#f5d76e", "#6ee7a8", "#3ec6ff"],
     };
 
@@ -175,6 +178,12 @@ const xarcanoid_game = (() => {
         }
     }
 
+    function play_sfx(name) {
+        if (typeof xarcanoid_audio !== "undefined") {
+            xarcanoid_audio.play(name);
+        }
+    }
+
     function is_running() {
         return running;
     }
@@ -183,6 +192,9 @@ const xarcanoid_game = (() => {
         const target = event.target;
         if (!target || typeof target.closest !== "function") {
             return false;
+        }
+        if (document.querySelector(".modal:not(.hidden)")) {
+            return true;
         }
         return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
     }
@@ -278,6 +290,7 @@ const xarcanoid_game = (() => {
         ball.vx = Math.cos(angle) * ball.speed;
         ball.vy = Math.sin(angle) * ball.speed;
         waiting_serve = false;
+        play_sfx("serve");
     }
 
     function build_bricks() {
@@ -350,14 +363,17 @@ const xarcanoid_game = (() => {
         if (ball.x - ball.r < 0) {
             ball.x = ball.r;
             ball.vx *= -1;
+            play_sfx("wall");
         }
         if (ball.x + ball.r > width) {
             ball.x = width - ball.r;
             ball.vx *= -1;
+            play_sfx("wall");
         }
         if (ball.y - ball.r < 0) {
             ball.y = ball.r;
             ball.vy *= -1;
+            play_sfx("wall");
         }
 
         bounce_paddle();
@@ -366,6 +382,7 @@ const xarcanoid_game = (() => {
         if (ball.y - ball.r > height) {
             combo = 0;
             ball.speed = Math.max(difficulty.start_speed, ball.speed * 0.93);
+            play_sfx("fall");
             if (!Number.isFinite(lives)) {
                 park_ball();
                 report_hud();
@@ -384,6 +401,7 @@ const xarcanoid_game = (() => {
         if (!bricks.some((brick) => brick.alive)) {
             level += 1;
             apply_speed_gain(24, difficulty.level_speed_cap);
+            play_sfx("level");
             reset_round(true);
             report_hud();
         }
@@ -417,6 +435,7 @@ const xarcanoid_game = (() => {
         const clamped = Math.max(-0.85, Math.min(0.85, hit));
         const angle = -Math.PI / 2 + clamped * 1.05;
         combo = 0;
+        play_sfx("paddle");
         apply_speed_gain(8, difficulty.hit_speed_cap);
         const speed = ball.speed;
         ball.vx = Math.cos(angle) * speed;
@@ -431,6 +450,7 @@ const xarcanoid_game = (() => {
                 continue;
             }
             brick.alive = false;
+            play_sfx("brick");
             add_brick_score(brick.points);
             const closest_x = clamp(ball.x, brick.x, brick.x + brick.w);
             const closest_y = clamp(ball.y, brick.y, brick.y + brick.h);
@@ -498,6 +518,7 @@ const xarcanoid_game = (() => {
         running = false;
         waiting_serve = true;
         pause_state = "off";
+        play_sfx("over");
         draw();
         if (on_over) {
             on_over({
@@ -533,8 +554,18 @@ const xarcanoid_game = (() => {
         ctx.fillStyle = theme.bg;
         ctx.fillRect(0, 0, width, height);
 
-        ctx.strokeStyle = theme.wall;
-        ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+        if (theme.classic) {
+            ctx.strokeStyle = theme.wall;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+        } else {
+            ctx.strokeStyle = theme.frame || theme.wall;
+            ctx.lineWidth = 5;
+            ctx.strokeRect(3, 3, width - 6, height - 6);
+            ctx.strokeStyle = theme.wall;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(7.5, 7.5, width - 15, height - 15);
+        }
 
         for (const brick of bricks) {
             if (!brick.alive) {
@@ -543,18 +574,30 @@ const xarcanoid_game = (() => {
             ctx.fillStyle = brick.color;
             round_rect(brick.x, brick.y, brick.w, brick.h, 3);
             ctx.fill();
+            ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+            ctx.fillRect(brick.x + 2, brick.y + 2, brick.w - 4, 3);
         }
 
         ctx.fillStyle = theme.paddle;
         round_rect(paddle.x, paddle.y, paddle.w, paddle.h, 6);
         ctx.fill();
+        ctx.fillStyle = theme.paddle_glow || "#ffffff";
+        ctx.globalAlpha = 0.55;
+        ctx.fillRect(paddle.x + 8, paddle.y + 2, paddle.w - 16, 3);
+        ctx.globalAlpha = 1;
         ctx.fillStyle = theme.paddle_stripe;
-        ctx.fillRect(paddle.x + 8, paddle.y + 3, paddle.w - 16, 3);
+        ctx.fillRect(paddle.x + 10, paddle.y + 6, paddle.w - 20, 2);
 
         ctx.beginPath();
         ctx.fillStyle = theme.ball;
         ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
         ctx.fill();
+        ctx.fillStyle = theme.paddle_glow || "#ffffff";
+        ctx.globalAlpha = 0.45;
+        ctx.beginPath();
+        ctx.arc(ball.x - 1.5, ball.y - 1.5, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
     }
 
     function round_rect(x, y, w, h, r) {

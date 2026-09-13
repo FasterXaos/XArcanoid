@@ -117,6 +117,10 @@ def create_app():
     def js_file(name):
         return send_from_directory(CLIENT_DIR / "js", name)
 
+    @app.get("/changelog")
+    def changelog():
+        return send_from_directory(ROOT_DIR, "CHANGELOG.md", mimetype="text/plain; charset=utf-8")
+
     return app
 
 

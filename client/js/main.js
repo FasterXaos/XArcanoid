@@ -9,6 +9,17 @@
     const register_btn = document.getElementById("register_btn");
     const logout_btn = document.getElementById("logout_btn");
     const lang_btn = document.getElementById("lang_btn");
+    const music_btn = document.getElementById("music_btn");
+    const sfx_btn = document.getElementById("sfx_btn");
+    const help_btn = document.getElementById("help_btn");
+    const settings_btn = document.getElementById("settings_btn");
+    const help_modal = document.getElementById("help_modal");
+    const settings_modal = document.getElementById("settings_modal");
+    const changelog_text = document.getElementById("changelog_text");
+    const settings_music_on = document.getElementById("settings_music_on");
+    const settings_sfx_on = document.getElementById("settings_sfx_on");
+    const settings_music_vol = document.getElementById("settings_music_vol");
+    const settings_sfx_vol = document.getElementById("settings_sfx_vol");
     const theme_select = document.getElementById("theme_select");
     const difficulty_select = document.getElementById("difficulty_select");
     const hud_combo = document.getElementById("hud_combo");
@@ -172,10 +183,126 @@
         }
     }
 
+    function render_audio_buttons() {
+        music_btn.classList.toggle("is_off", !xarcanoid_audio.is_music_on());
+        music_btn.setAttribute("aria-pressed", xarcanoid_audio.is_music_on() ? "true" : "false");
+        sfx_btn.classList.toggle("is_off", !xarcanoid_audio.is_sfx_on());
+        sfx_btn.setAttribute("aria-pressed", xarcanoid_audio.is_sfx_on() ? "true" : "false");
+        settings_music_on.checked = xarcanoid_audio.is_music_on();
+        settings_sfx_on.checked = xarcanoid_audio.is_sfx_on();
+        settings_music_vol.value = String(Math.round(xarcanoid_audio.music_volume() * 100));
+        settings_sfx_vol.value = String(Math.round(xarcanoid_audio.sfx_volume() * 100));
+    }
+
+    function open_modal(modal) {
+        help_modal.classList.add("hidden");
+        settings_modal.classList.add("hidden");
+        modal.classList.remove("hidden");
+        xarcanoid_game.pause();
+    }
+
+    function close_modals() {
+        help_modal.classList.add("hidden");
+        settings_modal.classList.add("hidden");
+    }
+
+    async function load_changelog() {
+        if (changelog_text.dataset.loaded === "1") {
+            return;
+        }
+        changelog_text.textContent = t("guide_log_loading");
+        try {
+            const response = await fetch("/changelog");
+            if (!response.ok) {
+                throw new Error("fail");
+            }
+            changelog_text.textContent = await response.text();
+            changelog_text.dataset.loaded = "1";
+        } catch (error) {
+            changelog_text.textContent = t("guide_log_fail");
+        }
+    }
+
     lang_btn.addEventListener("click", () => {
         xarcanoid_i18n.toggle();
         apply_language();
     });
+
+    music_btn.addEventListener("click", () => {
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.toggle_music();
+        if (xarcanoid_audio.is_music_on() && xarcanoid_game.is_running()) {
+            xarcanoid_audio.start_music();
+        }
+        render_audio_buttons();
+    });
+
+    sfx_btn.addEventListener("click", () => {
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.toggle_sfx();
+        render_audio_buttons();
+    });
+
+    help_btn.addEventListener("click", () => {
+        open_modal(help_modal);
+        load_changelog();
+    });
+
+    settings_btn.addEventListener("click", () => {
+        open_modal(settings_modal);
+        render_audio_buttons();
+    });
+
+    document.querySelectorAll("[data-close]").forEach((node) => {
+        node.addEventListener("click", close_modals);
+    });
+
+    help_modal.addEventListener("click", (event) => {
+        if (event.target === help_modal) {
+            close_modals();
+        }
+    });
+
+    settings_modal.addEventListener("click", (event) => {
+        if (event.target === settings_modal) {
+            close_modals();
+        }
+    });
+
+    window.addEventListener("keydown", (event) => {
+        if (event.code === "Escape") {
+            close_modals();
+        }
+    });
+
+    settings_music_on.addEventListener("change", () => {
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.set_music(settings_music_on.checked);
+        if (xarcanoid_audio.is_music_on() && xarcanoid_game.is_running()) {
+            xarcanoid_audio.start_music();
+        }
+        render_audio_buttons();
+    });
+
+    settings_sfx_on.addEventListener("change", () => {
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.set_sfx(settings_sfx_on.checked);
+        render_audio_buttons();
+    });
+
+    settings_music_vol.addEventListener("input", () => {
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.set_music_volume(Number(settings_music_vol.value) / 100);
+    });
+
+    settings_sfx_vol.addEventListener("input", () => {
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.set_sfx_volume(Number(settings_sfx_vol.value) / 100);
+    });
+
+    document.addEventListener("pointerdown", () => {
+        xarcanoid_audio.unlock();
+    }, { once: true });
 
     theme_select.addEventListener("change", () => {
         xarcanoid_themes.apply(theme_select.value);
@@ -224,6 +351,9 @@
         overlay_mode = "playing";
         end_btn.classList.remove("hidden");
         xarcanoid_game.set_difficulty(difficulty_select.value);
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.set_ducked(false);
+        xarcanoid_audio.start_music();
         xarcanoid_game.start();
     });
 
@@ -249,6 +379,8 @@
         },
         async (result) => {
             end_btn.classList.add("hidden");
+            xarcanoid_audio.stop_music();
+            xarcanoid_audio.set_ducked(false);
             if (!result.counts_score) {
                 show_overlay_over(t("over_practice"));
                 return;
@@ -270,6 +402,7 @@
         (state) => {
             if (state.mode === "paused") {
                 overlay_mode = "pause";
+                xarcanoid_audio.set_ducked(true);
                 render_overlay();
                 overlay.classList.remove("hidden");
                 return;
@@ -283,6 +416,7 @@
             }
             if (state.mode === "off" && (overlay_mode === "pause" || overlay_mode === "countdown")) {
                 overlay_mode = "playing";
+                xarcanoid_audio.set_ducked(false);
                 overlay.classList.add("hidden");
                 start_btn.classList.remove("hidden");
             }
@@ -298,6 +432,8 @@
     const loaded_theme = xarcanoid_themes.load();
     theme_select.value = loaded_theme.id;
 
+    xarcanoid_audio.load();
+    render_audio_buttons();
     xarcanoid_i18n.load();
     apply_language();
     refresh_session().catch((error) => set_auth_error(error.message));

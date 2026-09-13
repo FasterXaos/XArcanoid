@@ -28,6 +28,8 @@ const xarcanoid_i18n = {
             score_need_login: " Войдите, чтобы попасть в лидеры.",
             controls_hint: "Мышь тоже двигает каретку. Пробел пускает шар с каретки и ставит паузу, если шар уже летит.",
             lang_aria: "Язык",
+            music_aria: "Музыка",
+            sfx_aria: "Звуки",
             theme: "Тема",
             paused: "Пауза",
             paused_hint: "P или пробел — продолжить. После паузы короткий отсчёт.",
@@ -48,6 +50,30 @@ const xarcanoid_i18n = {
             bad_score: "Счёт вне допустимого диапазона",
             bad_level: "Уровень вне допустимого диапазона",
             request_failed: "Ошибка запроса",
+            help_aria: "Справка",
+            settings_aria: "Настройки",
+            close_aria: "Закрыть",
+            help_title: "Гайд",
+            settings_title: "Настройки",
+            settings_music: "Музыка",
+            settings_sfx: "Звуки",
+            settings_music_vol: "Громкость музыки",
+            settings_sfx_vol: "Громкость звуков",
+            guide_concept_title: "Концепт",
+            guide_concept: "XArcanoid — браузерный арканоид. Физика шара считается у вас в клиенте, сервер хранит только аккаунт и таблицу лидеров. Сломай все кирпичи, чтобы перейти на следующий этап; не упусти шар за нижний край.",
+            guide_controls_title: "Управление",
+            guide_controls: "Каретка: стрелки или A/D, либо мышь над полем. Пробел или клик по полю запускает шар с каретки. P ставит паузу в любой момент. Пробел ставит паузу, только если шар уже летит. После паузы идёт отсчёт 3–2–1 за 1.5 с. Уход со вкладки тоже ставит паузу. «Завершить» обрывает текущую игру.",
+            guide_rules_title: "Правила",
+            guide_rules: "Кирпичи дают очки, каретка отбивает шар (угол зависит от края удара). Стены и потолок отражают шар, пол — потеря жизни. После промаха скорость чуть падает, но не ниже стартовой для режима. До «мягкого» потолка скорость растёт как обычно; дальше ползёт медленно, чтобы бесконечная игра всё же усложнялась.",
+            guide_diff_title: "Сложность",
+            guide_diff: "Тренировка: обычная скорость, бесконечные жизни, вместо счёта ツ, в таблицу ничего не пишется. Обычная: три жизни, стандартный старт. Разгон: ×1.5 к очкам, шар быстрее, одна жизнь. Сложность применяется с новой игры.",
+            guide_score_title: "Счёт и комбо",
+            guide_score: "За кирпич: floor((очки_кирпича + комбо) × сложность × уровень × жизни × время). Сложность: тренировка 0, обычная 1, разгон 1.5. Уровень: 1 + 0.15×(этап−1). Жизни: 1 + 0.5/число_жизней — чем меньше жизней, тем больше прибавка. Время: 1 + секунды/60, таймер идёт только пока шар в полёте. Комбо растёт +1, +2, +3… за кирпичи подряд и сбрасывается от каретки или падения. В таблицу пишется лучший забег и его макс. комбо, только для вошедших игроков.",
+            guide_extra_title: "Ещё",
+            guide_extra: "Темы и громкость — в шестерёнке. Нота и динамик на панели быстро включают музыку и SFX. Звук синтезируется в браузере, без файлов; браузер может молчать до первого клика. Гость может играть, но рекорд не сохранится.",
+            guide_log_title: "Журнал изменений",
+            guide_log_loading: "Загрузка журнала…",
+            guide_log_fail: "Не удалось загрузить журнал.",
         },
         en: {
             player: "Player",
@@ -75,6 +101,8 @@ const xarcanoid_i18n = {
             score_need_login: " Log in to join the leaders.",
             controls_hint: "The mouse also moves the paddle. Space serves from the paddle and pauses once the ball is flying.",
             lang_aria: "Language",
+            music_aria: "Music",
+            sfx_aria: "Sound",
             theme: "Theme",
             paused: "Paused",
             paused_hint: "P or Space to continue. A short countdown starts after pause.",
@@ -95,6 +123,30 @@ const xarcanoid_i18n = {
             bad_score: "Score is out of range",
             bad_level: "Level is out of range",
             request_failed: "Request failed",
+            help_aria: "Help",
+            settings_aria: "Settings",
+            close_aria: "Close",
+            help_title: "Guide",
+            settings_title: "Settings",
+            settings_music: "Music",
+            settings_sfx: "Sounds",
+            settings_music_vol: "Music volume",
+            settings_sfx_vol: "Sound volume",
+            guide_concept_title: "Concept",
+            guide_concept: "XArcanoid is a browser Breakout-style game. Ball physics run in your client; the server only stores accounts and the leaderboard. Clear every brick to advance a stage; do not let the ball fall off the bottom.",
+            guide_controls_title: "Controls",
+            guide_controls: "Paddle: arrows or A/D, or the mouse over the field. Space or a click serves the ball from the paddle. P pauses at any time. Space pauses only while the ball is already flying. After pause a 3–2–1 countdown lasts 1.5s. Leaving the tab also pauses. End run aborts the current game.",
+            guide_rules_title: "Rules",
+            guide_rules: "Bricks score points; the paddle returns the ball (angle depends on hit position). Walls and the ceiling bounce; the floor costs a life. A miss shaves a little speed, but not below the mode's start speed. Up to the soft cap, speed grows as before; after that it still creeps so an endless run gets harder.",
+            guide_diff_title: "Difficulty",
+            guide_diff: "Practice: normal speed, infinite lives, score shows ツ and is not saved. Standard: three lives, default start. Overdrive: 1.5× points, faster ball, one life. Difficulty applies when a new game starts.",
+            guide_score_title: "Score and combo",
+            guide_score: "Per brick: floor((brick points + combo) × difficulty × level × lives × time). Difficulty: practice 0, standard 1, overdrive 1.5. Level: 1 + 0.15×(stage−1). Lives: 1 + 0.5/lives — fewer lives pay more. Time: 1 + seconds/60, and the timer runs only while the ball is in flight. Combo grows +1, +2, +3… for bricks in a row and resets on paddle or a fall. The board stores your best run and that run's max combo, for signed-in players only.",
+            guide_extra_title: "Also",
+            guide_extra: "Themes and volume live in the gear menu. The note and speaker buttons on the bar toggle music and SFX quickly. Audio is synthesized in the browser; it may stay silent until the first click. Guests can play, but scores are not saved.",
+            guide_log_title: "Changelog",
+            guide_log_loading: "Loading changelog…",
+            guide_log_fail: "Could not load the changelog.",
         },
     },
 
@@ -136,5 +188,24 @@ const xarcanoid_i18n = {
             lang_btn.querySelector("[data-lang='ru']").classList.toggle("active", this.lang === "ru");
             lang_btn.querySelector("[data-lang='en']").classList.toggle("active", this.lang === "en");
         }
+        const music_btn = document.getElementById("music_btn");
+        if (music_btn) {
+            music_btn.setAttribute("aria-label", this.t("music_aria"));
+        }
+        const sfx_btn = document.getElementById("sfx_btn");
+        if (sfx_btn) {
+            sfx_btn.setAttribute("aria-label", this.t("sfx_aria"));
+        }
+        const help_btn = document.getElementById("help_btn");
+        if (help_btn) {
+            help_btn.setAttribute("aria-label", this.t("help_aria"));
+        }
+        const settings_btn = document.getElementById("settings_btn");
+        if (settings_btn) {
+            settings_btn.setAttribute("aria-label", this.t("settings_aria"));
+        }
+        document.querySelectorAll("[data-close]").forEach((node) => {
+            node.setAttribute("aria-label", this.t("close_aria"));
+        });
     },
 };
