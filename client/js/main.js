@@ -7,6 +7,11 @@
     const register_btn = document.getElementById("register_btn");
     const logout_btn = document.getElementById("logout_btn");
     const lang_btn = document.getElementById("lang_btn");
+    const theme_select = document.getElementById("theme_select");
+    const difficulty_select = document.getElementById("difficulty_select");
+    const hud_combo = document.getElementById("hud_combo");
+    const hud_time = document.getElementById("hud_time");
+    const end_btn = document.getElementById("end_btn");
     const leaderboard_list = document.getElementById("leaderboard_list");
     const leaderboard_empty = document.getElementById("leaderboard_empty");
     const hud_score = document.getElementById("hud_score");
@@ -20,6 +25,7 @@
 
     let current_user = null;
     let overlay_mode = "intro";
+    let countdown_number = 3;
     let last_over = null;
     let last_auth_error = "";
     let leaderboard_failed = false;
@@ -82,15 +88,35 @@
     }
 
     function render_overlay() {
+        start_btn.classList.remove("hidden");
         if (overlay_mode === "over" && last_over) {
             overlay_title.textContent = t("game_over");
             overlay_text.textContent = last_over.text;
             start_btn.textContent = t("play_again");
             return;
         }
+        if (overlay_mode === "pause") {
+            overlay_title.textContent = t("paused");
+            overlay_text.textContent = t("paused_hint");
+            start_btn.classList.add("hidden");
+            return;
+        }
+        if (overlay_mode === "countdown") {
+            overlay_title.textContent = String(countdown_number);
+            overlay_text.textContent = "";
+            start_btn.classList.add("hidden");
+            return;
+        }
         overlay_title.textContent = "XArcanoid";
         overlay_text.textContent = t("overlay_hint");
         start_btn.textContent = t("play");
+    }
+
+    function format_time(seconds) {
+        const total = Math.max(0, Math.floor(seconds));
+        const minutes = Math.floor(total / 60);
+        const rest = total % 60;
+        return minutes + ":" + String(rest).padStart(2, "0");
     }
 
     function apply_language() {
@@ -144,6 +170,33 @@
         apply_language();
     });
 
+    theme_select.addEventListener("change", () => {
+        xarcanoid_themes.apply(theme_select.value);
+    });
+
+    difficulty_select.addEventListener("change", () => {
+        xarcanoid_game.set_difficulty(difficulty_select.value);
+    });
+
+    overlay.addEventListener("click", (event) => {
+        if (event.target === start_btn) {
+            return;
+        }
+        if (overlay_mode === "pause") {
+            xarcanoid_game.request_resume();
+        }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            xarcanoid_game.pause();
+        }
+    });
+
+    window.addEventListener("blur", () => {
+        xarcanoid_game.pause();
+    });
+
     auth_form.addEventListener("submit", (event) => {
         event.preventDefault();
         submit_auth("login");
@@ -162,7 +215,13 @@
     start_btn.addEventListener("click", () => {
         overlay.classList.add("hidden");
         overlay_mode = "playing";
+        end_btn.classList.remove("hidden");
+        xarcanoid_game.set_difficulty(difficulty_select.value);
         xarcanoid_game.start();
+    });
+
+    end_btn.addEventListener("click", () => {
+        xarcanoid_game.end_run();
     });
 
     function show_overlay_over(text) {
@@ -175,11 +234,18 @@
     xarcanoid_game.attach(
         canvas,
         (hud) => {
-            hud_score.textContent = String(hud.score);
-            hud_lives.textContent = String(hud.lives);
+            hud_score.textContent = hud.counts_score ? String(hud.score) : t("score_joke");
+            hud_combo.textContent = String(hud.combo);
+            hud_time.textContent = format_time(hud.elapsed_s);
+            hud_lives.textContent = Number.isFinite(hud.lives) ? String(hud.lives) : "∞";
             hud_level.textContent = String(hud.level);
         },
         async (result) => {
+            end_btn.classList.add("hidden");
+            if (!result.counts_score) {
+                show_overlay_over(t("over_practice"));
+                return;
+            }
             let text = t("over_stats", { score: result.score, level: result.level });
             if (current_user) {
                 try {
@@ -194,7 +260,36 @@
             }
             show_overlay_over(text);
         },
+        (state) => {
+            if (state.mode === "paused") {
+                overlay_mode = "pause";
+                render_overlay();
+                overlay.classList.remove("hidden");
+                return;
+            }
+            if (state.mode === "countdown") {
+                overlay_mode = "countdown";
+                countdown_number = state.number;
+                render_overlay();
+                overlay.classList.remove("hidden");
+                return;
+            }
+            if (state.mode === "off" && (overlay_mode === "pause" || overlay_mode === "countdown")) {
+                overlay_mode = "playing";
+                overlay.classList.add("hidden");
+                start_btn.classList.remove("hidden");
+            }
+        },
     );
+
+    xarcanoid_themes.list.forEach((theme) => {
+        const option = document.createElement("option");
+        option.value = theme.id;
+        option.textContent = theme.name;
+        theme_select.appendChild(option);
+    });
+    const loaded_theme = xarcanoid_themes.load();
+    theme_select.value = loaded_theme.id;
 
     xarcanoid_i18n.load();
     apply_language();

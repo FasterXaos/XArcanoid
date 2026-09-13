@@ -1,4 +1,4 @@
-**XArcanoid** 0.3.1
+**XArcanoid** 0.4.0
 
 Browser Arkanoid with registration, sessions, and a leaderboard.
 
@@ -78,9 +78,18 @@ sudo systemctl stop nginx
 ## Controls
 
 - Paddle: arrow keys or A/D, or the mouse over the field
-- Space or a click on the field serves the ball
+- Space or a click serves the ball from the paddle
+- P pauses anytime; Space pauses only while the ball is already flying
+- After pause, a 1.5s countdown runs before play continues
+- Switching away from the page pauses automatically
+- End run stops the current game on any difficulty
+- Practice: infinite lives, score is a joke glyph and is not saved
+- Standard: current default rules
+- Overdrive: 1.5× points, faster ball, one life
+- Score uses difficulty, time, stage, remaining lives (fewer lives pay more), and combo; always floored to an integer
 - Guests can play; only signed-in players are written to the leaderboard
 - Language: RU / EN toggle to the left of the field
+- Themes: Night Arcade (default) and several others in the left panel
 
 ## Layout
 

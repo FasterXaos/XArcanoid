@@ -22,6 +22,20 @@
                     <span data-lang="en">EN</span>
                 </button>
 
+                <label class="theme_picker">
+                    <span data-i18n="theme">Тема</span>
+                    <select id="theme_select"></select>
+                </label>
+
+                <label class="theme_picker">
+                    <span data-i18n="difficulty">Сложность</span>
+                    <select id="difficulty_select">
+                        <option value="practice" data-i18n="diff_practice">Тренировка</option>
+                        <option value="standard" selected data-i18n="diff_standard">Обычная</option>
+                        <option value="overdrive" data-i18n="diff_overdrive">Разгон</option>
+                    </select>
+                </label>
+
                 <section class="card" id="auth_card">
                     <h2 data-i18n="player">Игрок</h2>
                     <p class="status guest" id="auth_status">Гость — счёт в таблицу не попадёт</p>
@@ -55,6 +69,8 @@
             <section class="stage">
                 <div class="hud">
                     <span><span data-i18n="score">очки</span> <strong id="hud_score">0</strong></span>
+                    <span><span data-i18n="combo">комбо</span> <strong id="hud_combo">0</strong></span>
+                    <span><span data-i18n="time">время</span> <strong id="hud_time">0:00</strong></span>
                     <span><span data-i18n="lives">жизни</span> <strong id="hud_lives">3</strong></span>
                     <span><span data-i18n="level">уровень</span> <strong id="hud_level">1</strong></span>
                 </div>
@@ -66,12 +82,14 @@
                         <button type="button" id="start_btn">Играть</button>
                     </div>
                 </div>
-                <p class="hint controls_hint" data-i18n="controls_hint">Мышь тоже двигает каретку. После проигрыша счёт сохранится, если вы вошли.</p>
+                <button type="button" id="end_btn" class="ghost end_btn hidden" data-i18n="end_run">Завершить</button>
+                <p class="hint controls_hint" data-i18n="controls_hint">Мышь тоже двигает каретку. P — пауза, пробел — пауза пока шар не запущен.</p>
             </section>
         </div>
     </div>
 
     <script src="/js/i18n.js"></script>
+    <script src="/js/themes.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/game.js"></script>
     <script src="/js/main.js"></script>

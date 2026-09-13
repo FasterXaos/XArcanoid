@@ -1,0 +1,203 @@
+const xarcanoid_themes = {
+    storage_key: "xarcanoid_theme",
+    current_id: "night_arcade",
+    list: [
+        {
+            id: "night_arcade",
+            name: "Night Arcade",
+            ui: {
+                "--bg": "#0c1018",
+                "--bg-glow": "#1a2740",
+                "--panel": "#141b27",
+                "--panel-2": "#1b2433",
+                "--line": "#2a3648",
+                "--text": "#e8eef8",
+                "--muted": "#8b9bb4",
+                "--accent": "#ff8a3d",
+                "--accent-2": "#3ec6ff",
+                "--accent-ink": "#1a1008",
+                "--danger": "#ff5d6c",
+                "--ok": "#6ee7a8",
+                "--input-bg": "#0e1520",
+                "--game-well": "#070b12",
+                "--overlay": "rgba(7, 11, 18, 0.72)",
+            },
+            game: {
+                bg: "#070b12",
+                wall: "#1c2a3d",
+                paddle: "#d9e4f5",
+                paddle_stripe: "#ff8a3d",
+                ball: "#f4fbff",
+                bricks: ["#ff5d6c", "#ff8a3d", "#f5d76e", "#6ee7a8", "#3ec6ff"],
+            },
+        },
+        {
+            id: "phosphor_den",
+            name: "Phosphor Den",
+            ui: {
+                "--bg": "#050a06",
+                "--bg-glow": "#0d2a14",
+                "--panel": "#0c1610",
+                "--panel-2": "#102018",
+                "--line": "#1e3b28",
+                "--text": "#d6ffd0",
+                "--muted": "#7eab86",
+                "--accent": "#5cff7a",
+                "--accent-2": "#c6ff4a",
+                "--accent-ink": "#05200a",
+                "--danger": "#ff6b5a",
+                "--ok": "#9dffb0",
+                "--input-bg": "#07110b",
+                "--game-well": "#020704",
+                "--overlay": "rgba(2, 10, 4, 0.76)",
+            },
+            game: {
+                bg: "#020704",
+                wall: "#163822",
+                paddle: "#d8ffd4",
+                paddle_stripe: "#5cff7a",
+                ball: "#eaffea",
+                bricks: ["#7cff9a", "#c6ff4a", "#5cff7a", "#3ad67a", "#1f8f5a"],
+            },
+        },
+        {
+            id: "magma_well",
+            name: "Magma Well",
+            ui: {
+                "--bg": "#140808",
+                "--bg-glow": "#3a120c",
+                "--panel": "#1c0d0d",
+                "--panel-2": "#271212",
+                "--line": "#4a2218",
+                "--text": "#ffe8d6",
+                "--muted": "#c4927a",
+                "--accent": "#ff5a1f",
+                "--accent-2": "#ffc14a",
+                "--accent-ink": "#2a0b04",
+                "--danger": "#ff4d4d",
+                "--ok": "#ffd27a",
+                "--input-bg": "#120808",
+                "--game-well": "#0c0404",
+                "--overlay": "rgba(20, 6, 4, 0.76)",
+            },
+            game: {
+                bg: "#0c0404",
+                wall: "#4a1c12",
+                paddle: "#ffe0c2",
+                paddle_stripe: "#ff5a1f",
+                ball: "#fff3e0",
+                bricks: ["#ff3b2f", "#ff5a1f", "#ff8a3d", "#ffc14a", "#8b1e12"],
+            },
+        },
+        {
+            id: "glacier_box",
+            name: "Glacier Box",
+            ui: {
+                "--bg": "#081018",
+                "--bg-glow": "#12324a",
+                "--panel": "#0d1824",
+                "--panel-2": "#122233",
+                "--line": "#2a4d68",
+                "--text": "#e7f6ff",
+                "--muted": "#8eb4c8",
+                "--accent": "#7ad7ff",
+                "--accent-2": "#b9f0ff",
+                "--accent-ink": "#06202c",
+                "--danger": "#ff7b93",
+                "--ok": "#9ef0d2",
+                "--input-bg": "#0a1520",
+                "--game-well": "#061018",
+                "--overlay": "rgba(6, 16, 24, 0.74)",
+            },
+            game: {
+                bg: "#061018",
+                wall: "#1e4a66",
+                paddle: "#dff4ff",
+                paddle_stripe: "#7ad7ff",
+                ball: "#f3fbff",
+                bricks: ["#7ad7ff", "#5aa0ff", "#b9f0ff", "#9ef0d2", "#3d7ea8"],
+            },
+        },
+        {
+            id: "candy_core",
+            name: "Candy Core",
+            ui: {
+                "--bg": "#140816",
+                "--bg-glow": "#3a1440",
+                "--panel": "#1c1024",
+                "--panel-2": "#271433",
+                "--line": "#4a2a58",
+                "--text": "#ffeef8",
+                "--muted": "#c49bb8",
+                "--accent": "#ff6ad5",
+                "--accent-2": "#c9a6ff",
+                "--accent-ink": "#2a0820",
+                "--danger": "#ff5d8f",
+                "--ok": "#ffd0ef",
+                "--input-bg": "#160a1c",
+                "--game-well": "#100614",
+                "--overlay": "rgba(18, 6, 22, 0.76)",
+            },
+            game: {
+                bg: "#100614",
+                wall: "#4a2458",
+                paddle: "#ffe6f6",
+                paddle_stripe: "#ff6ad5",
+                ball: "#fff5fb",
+                bricks: ["#ff6ad5", "#ff8ab8", "#c9a6ff", "#7ae0ff", "#ff5d8f"],
+            },
+        },
+        {
+            id: "paper_kit",
+            name: "Paper Kit",
+            ui: {
+                "--bg": "#efe6d4",
+                "--bg-glow": "#f7f0e2",
+                "--panel": "#f6efe0",
+                "--panel-2": "#ece2cc",
+                "--line": "#cbbca0",
+                "--text": "#2a241c",
+                "--muted": "#6f6556",
+                "--accent": "#c45c1a",
+                "--accent-2": "#3b7ca8",
+                "--accent-ink": "#fff6ea",
+                "--danger": "#b4232c",
+                "--ok": "#2f7a4a",
+                "--input-bg": "#fffaf1",
+                "--game-well": "#f3ead6",
+                "--overlay": "rgba(42, 36, 28, 0.55)",
+            },
+            game: {
+                bg: "#f3ead6",
+                wall: "#cbbca0",
+                paddle: "#2a241c",
+                paddle_stripe: "#c45c1a",
+                ball: "#1c1814",
+                bricks: ["#c45c1a", "#b4232c", "#3b7ca8", "#2f7a4a", "#6b4ea8"],
+            },
+        },
+    ],
+
+    by_id(id) {
+        return this.list.find((theme) => theme.id === id) || this.list[0];
+    },
+
+    apply(id) {
+        const theme = this.by_id(id);
+        this.current_id = theme.id;
+        localStorage.setItem(this.storage_key, theme.id);
+        const root = document.documentElement;
+        Object.keys(theme.ui).forEach((name) => {
+            root.style.setProperty(name, theme.ui[name]);
+        });
+        if (window.xarcanoid_game && xarcanoid_game.set_theme) {
+            xarcanoid_game.set_theme(theme.game);
+        }
+        return theme;
+    },
+
+    load() {
+        const saved = localStorage.getItem(this.storage_key);
+        return this.apply(saved || "night_arcade");
+    },
+};
