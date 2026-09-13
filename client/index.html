@@ -13,46 +13,50 @@
                 <span class="brand_mark">■</span>
                 <h1>XArcanoid</h1>
             </div>
-            <p class="tagline">локальный стенд · облако потом</p>
         </header>
 
         <div class="layout">
             <aside class="panel">
+                <button type="button" id="lang_btn" class="lang_btn" aria-label="Язык">
+                    <span data-lang="ru">RU</span>
+                    <span data-lang="en">EN</span>
+                </button>
+
                 <section class="card" id="auth_card">
-                    <h2>Игрок</h2>
-                    <p class="status" id="auth_status">Гость — счёт в таблицу не попадёт</p>
+                    <h2 data-i18n="player">Игрок</h2>
+                    <p class="status guest" id="auth_status">Гость — счёт в таблицу не попадёт</p>
 
                     <form id="auth_form" class="auth_form">
                         <label>
-                            Имя
+                            <span data-i18n="username">Имя</span>
                             <input id="username_input" name="username" autocomplete="username" maxlength="20">
                         </label>
                         <label>
-                            Пароль
+                            <span data-i18n="password">Пароль</span>
                             <input id="password_input" name="password" type="password" autocomplete="current-password" maxlength="64">
                         </label>
                         <div class="row_btns">
-                            <button type="submit" id="login_btn">Войти</button>
-                            <button type="button" id="register_btn" class="ghost">Регистрация</button>
+                            <button type="submit" id="login_btn" data-i18n="login">Войти</button>
+                            <button type="button" id="register_btn" class="ghost" data-i18n="register">Регистрация</button>
                         </div>
                     </form>
 
-                    <button type="button" id="logout_btn" class="ghost hidden">Выйти</button>
+                    <button type="button" id="logout_btn" class="ghost hidden" data-i18n="logout">Выйти</button>
                     <p class="error" id="auth_error"></p>
                 </section>
 
                 <section class="card">
-                    <h2>Лидеры</h2>
+                    <h2 data-i18n="leaders">Лидеры</h2>
                     <ol id="leaderboard_list" class="leaderboard"></ol>
-                    <p class="hint" id="leaderboard_empty">Пока пусто — сломай пару кирпичей.</p>
+                    <p class="hint" id="leaderboard_empty" data-i18n="leaderboard_empty">Пока пусто — сломай пару кирпичей.</p>
                 </section>
             </aside>
 
             <section class="stage">
                 <div class="hud">
-                    <span>очки <strong id="hud_score">0</strong></span>
-                    <span>жизни <strong id="hud_lives">3</strong></span>
-                    <span>уровень <strong id="hud_level">1</strong></span>
+                    <span><span data-i18n="score">очки</span> <strong id="hud_score">0</strong></span>
+                    <span><span data-i18n="lives">жизни</span> <strong id="hud_lives">3</strong></span>
+                    <span><span data-i18n="level">уровень</span> <strong id="hud_level">1</strong></span>
                 </div>
                 <div class="canvas_wrap">
                     <canvas id="game_canvas" width="720" height="480"></canvas>
@@ -62,11 +66,12 @@
                         <button type="button" id="start_btn">Играть</button>
                     </div>
                 </div>
-                <p class="hint controls_hint">Мышь тоже двигает каретку. После проигрыша счёт сохранится, если вы вошли.</p>
+                <p class="hint controls_hint" data-i18n="controls_hint">Мышь тоже двигает каретку. После проигрыша счёт сохранится, если вы вошли.</p>
             </section>
         </div>
     </div>
 
+    <script src="/js/i18n.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/game.js"></script>
     <script src="/js/main.js"></script>

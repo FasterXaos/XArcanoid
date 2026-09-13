@@ -1,4 +1,4 @@
-**XArcanoid** 0.2.0
+**XArcanoid** 0.3.0
 
 Browser Arkanoid with registration, sessions, and a leaderboard.
 
@@ -80,6 +80,7 @@ sudo systemctl stop nginx
 - Paddle: arrow keys or A/D, or the mouse over the field
 - Space or a click on the field serves the ball
 - Guests can play; only signed-in players are written to the leaderboard
+- Language: RU / EN toggle to the left of the field
 
 ## Layout
 

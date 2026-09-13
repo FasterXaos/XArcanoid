@@ -6,6 +6,7 @@
     const password_input = document.getElementById("password_input");
     const register_btn = document.getElementById("register_btn");
     const logout_btn = document.getElementById("logout_btn");
+    const lang_btn = document.getElementById("lang_btn");
     const leaderboard_list = document.getElementById("leaderboard_list");
     const leaderboard_empty = document.getElementById("leaderboard_empty");
     const hud_score = document.getElementById("hud_score");
@@ -18,29 +19,48 @@
     const canvas = document.getElementById("game_canvas");
 
     let current_user = null;
+    let overlay_mode = "intro";
+    let last_over = null;
+    let last_auth_error = "";
+    let leaderboard_failed = false;
+
+    function t(key, vars) {
+        return xarcanoid_i18n.t(key, vars);
+    }
+
+    function translate_error(message) {
+        if (!message) {
+            return "";
+        }
+        const known = t(message);
+        return known === message ? message : known;
+    }
 
     function set_auth_error(message) {
-        auth_error.textContent = message || "";
+        last_auth_error = message || "";
+        auth_error.textContent = translate_error(last_auth_error);
     }
 
     function render_auth() {
         if (current_user) {
-            auth_status.textContent = "Вы вошли как " + current_user.username;
+            auth_status.textContent = t("signed_in", { name: current_user.username });
             auth_status.classList.remove("guest");
             auth_form.classList.add("hidden");
             logout_btn.classList.remove("hidden");
         } else {
-            auth_status.textContent = "Гость — счёт в таблицу не попадёт";
+            auth_status.textContent = t("guest_status");
             auth_status.classList.add("guest");
             auth_form.classList.remove("hidden");
             logout_btn.classList.add("hidden");
         }
+        auth_error.textContent = translate_error(last_auth_error);
     }
 
     function render_leaderboard(entries) {
         leaderboard_list.innerHTML = "";
         if (!entries.length) {
             leaderboard_empty.classList.remove("hidden");
+            leaderboard_empty.textContent = t("leaderboard_empty");
             return;
         }
         leaderboard_empty.classList.add("hidden");
@@ -61,6 +81,30 @@
             .replaceAll(">", "&gt;");
     }
 
+    function render_overlay() {
+        if (overlay_mode === "over" && last_over) {
+            overlay_title.textContent = t("game_over");
+            overlay_text.textContent = last_over.text;
+            start_btn.textContent = t("play_again");
+            return;
+        }
+        overlay_title.textContent = "XArcanoid";
+        overlay_text.textContent = t("overlay_hint");
+        start_btn.textContent = t("play");
+    }
+
+    function apply_language() {
+        xarcanoid_i18n.apply();
+        render_auth();
+        render_overlay();
+        if (leaderboard_failed) {
+            leaderboard_empty.textContent = t("leaderboard_unavailable");
+            leaderboard_empty.classList.remove("hidden");
+        } else if (!leaderboard_list.children.length) {
+            leaderboard_empty.textContent = t("leaderboard_empty");
+        }
+    }
+
     async function refresh_session() {
         const payload = await xarcanoid_api.me();
         current_user = payload.user;
@@ -68,8 +112,15 @@
     }
 
     async function refresh_leaderboard() {
-        const payload = await xarcanoid_api.leaderboard();
-        render_leaderboard(payload.entries || []);
+        try {
+            const payload = await xarcanoid_api.leaderboard();
+            leaderboard_failed = false;
+            render_leaderboard(payload.entries || []);
+        } catch (error) {
+            leaderboard_failed = true;
+            leaderboard_empty.textContent = t("leaderboard_unavailable");
+            leaderboard_empty.classList.remove("hidden");
+        }
     }
 
     async function submit_auth(kind) {
@@ -88,6 +139,11 @@
         }
     }
 
+    lang_btn.addEventListener("click", () => {
+        xarcanoid_i18n.toggle();
+        apply_language();
+    });
+
     auth_form.addEventListener("submit", (event) => {
         event.preventDefault();
         submit_auth("login");
@@ -105,13 +161,14 @@
 
     start_btn.addEventListener("click", () => {
         overlay.classList.add("hidden");
+        overlay_mode = "playing";
         xarcanoid_game.start();
     });
 
-    function show_overlay(title, text, button_label) {
-        overlay_title.textContent = title;
-        overlay_text.textContent = text;
-        start_btn.textContent = button_label;
+    function show_overlay_over(text) {
+        last_over = { text };
+        overlay_mode = "over";
+        render_overlay();
         overlay.classList.remove("hidden");
     }
 
@@ -123,24 +180,24 @@
             hud_level.textContent = String(hud.level);
         },
         async (result) => {
-            let text = "Счёт " + result.score + ", уровень " + result.level + ".";
+            let text = t("over_stats", { score: result.score, level: result.level });
             if (current_user) {
                 try {
                     await xarcanoid_api.submit_score(result.score, result.level);
                     await refresh_leaderboard();
-                    text += " Результат записан в таблицу.";
+                    text += t("score_saved");
                 } catch (error) {
-                    text += " Не удалось сохранить: " + error.message;
+                    text += t("score_save_fail", { error: translate_error(error.message) });
                 }
             } else {
-                text += " Войдите, чтобы попасть в лидеры.";
+                text += t("score_need_login");
             }
-            show_overlay("Игра окончена", text, "Ещё раз");
+            show_overlay_over(text);
         },
     );
 
+    xarcanoid_i18n.load();
+    apply_language();
     refresh_session().catch((error) => set_auth_error(error.message));
-    refresh_leaderboard().catch(() => {
-        leaderboard_empty.textContent = "Таблица пока недоступна.";
-    });
+    refresh_leaderboard();
 })();

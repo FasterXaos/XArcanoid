@@ -48,11 +48,11 @@ def create_app():
         password = payload.get("password") or ""
 
         if not auth.is_valid_username(username):
-            return json_error("Имя: 3–20 символов, латиница, цифры и _")
+            return json_error("invalid_username")
         if not auth.is_valid_password(password):
-            return json_error("Пароль: от 4 до 64 символов")
+            return json_error("invalid_password")
         if db.find_user_by_username(username):
-            return json_error("Такой игрок уже есть", 409)
+            return json_error("username_taken", 409)
 
         user_id = db.create_user(username, auth.hash_password(password))
         session["user_id"] = user_id
@@ -66,7 +66,7 @@ def create_app():
         user = db.find_user_by_username(username)
 
         if not user or not auth.password_matches(user["password_hash"], password):
-            return json_error("Неверное имя или пароль", 401)
+            return json_error("bad_credentials", 401)
 
         session["user_id"] = user["id"]
         return jsonify({"ok": True, "user": {"username": user["username"]}})
@@ -80,19 +80,19 @@ def create_app():
     def submit_score():
         user = current_user()
         if not user:
-            return json_error("Нужно войти, чтобы сохранить счёт", 401)
+            return json_error("login_required", 401)
 
         payload = request.get_json(silent=True) or {}
         try:
             score = int(payload.get("score"))
             level = int(payload.get("level", 1))
         except (TypeError, ValueError):
-            return json_error("Счёт и уровень должны быть числами")
+            return json_error("bad_numbers")
 
         if score < 0 or score > MAX_SCORE:
-            return json_error("Счёт вне допустимого диапазона")
+            return json_error("bad_score")
         if level < 1 or level > MAX_LEVEL:
-            return json_error("Уровень вне допустимого диапазона")
+            return json_error("bad_level")
 
         db.insert_score(user["id"], score, level)
         return jsonify({"ok": True})
