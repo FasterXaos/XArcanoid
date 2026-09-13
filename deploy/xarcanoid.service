@@ -1,0 +1,15 @@
+[Unit]
+Description=XArcanoid (gunicorn)
+After=network.target
+
+[Service]
+User=__APP_USER__
+Group=__APP_GROUP__
+WorkingDirectory=__APP_ROOT__
+EnvironmentFile=-__APP_ROOT__/deploy/xarcanoid.env
+ExecStart=__APP_ROOT__/.venv/bin/gunicorn --bind 127.0.0.1:8000 --workers 1 --threads 4 --timeout 60 server.app:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
