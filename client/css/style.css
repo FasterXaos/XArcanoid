@@ -76,6 +76,41 @@ h2 {
     margin-bottom: 12px;
 }
 
+.player_head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.player_head h2 {
+    margin-bottom: 0;
+}
+
+.player_name {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 650;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#auth_card.signed_in .status,
+#auth_card.signed_in .auth_form {
+    display: none !important;
+}
+
+#auth_card.signed_in #logout_btn {
+    margin-top: 0;
+}
+
+.error:empty {
+    min-height: 0;
+    margin: 0;
+}
+
 .lang_btn {
     display: flex;
     align-self: flex-start;
@@ -220,11 +255,16 @@ button:hover {
 
 .leaderboard li {
     display: grid;
-    grid-template-columns: 1.4em 1fr auto;
+    grid-template-columns: 1.4em 1fr auto auto;
     gap: 8px;
     padding: 6px 0;
     border-bottom: 1px solid var(--line);
     font-size: 14px;
+}
+
+.leaderboard .combo {
+    color: var(--muted);
+    font-size: 12px;
 }
 
 .leaderboard .rank {

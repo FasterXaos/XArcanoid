@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-09-14
+
+### Added
+
+- Best combo is stored with each run and shown on the leaderboard.
+
+### Changed
+
+- After the difficulty speed cap, ball speed still creeps up slowly to a much higher hard cap.
+- Logged-in player name sits on the PLAYER heading row; the extra signed-in banner is gone.
+
+### Fixed
+
+- Timer no longer runs while the ball waits on the paddle.
+- Losing a ball now shaves a bit of speed instead of leaving it unchanged.
+
 ## [0.4.0] - 2026-09-14
 
 ### Added

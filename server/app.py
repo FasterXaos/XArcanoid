@@ -86,6 +86,7 @@ def create_app():
         try:
             score = int(payload.get("score"))
             level = int(payload.get("level", 1))
+            max_combo = int(payload.get("max_combo", 0))
         except (TypeError, ValueError):
             return json_error("bad_numbers")
 
@@ -93,8 +94,10 @@ def create_app():
             return json_error("bad_score")
         if level < 1 or level > MAX_LEVEL:
             return json_error("bad_level")
+        if max_combo < 0 or max_combo > 9999:
+            return json_error("bad_numbers")
 
-        db.insert_score(user["id"], score, level)
+        db.insert_score(user["id"], score, level, max_combo)
         return jsonify({"ok": True})
 
     @app.get("/api/leaderboard")

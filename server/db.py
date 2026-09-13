@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS scores (
     user_id INTEGER NOT NULL,
     score INTEGER NOT NULL,
     level INTEGER NOT NULL DEFAULT 1,
+    max_combo INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -37,6 +38,11 @@ def get_connection():
 def init_db():
     with get_connection() as connection:
         connection.executescript(SCHEMA)
+        columns = [row[1] for row in connection.execute("PRAGMA table_info(scores)")]
+        if "max_combo" not in columns:
+            connection.execute(
+                "ALTER TABLE scores ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0"
+            )
 
 
 def create_user(username, password_hash):
@@ -66,11 +72,11 @@ def find_user_by_id(user_id):
         return dict(row) if row else None
 
 
-def insert_score(user_id, score, level):
+def insert_score(user_id, score, level, max_combo):
     with get_connection() as connection:
         connection.execute(
-            "INSERT INTO scores (user_id, score, level) VALUES (?, ?, ?)",
-            (user_id, score, level),
+            "INSERT INTO scores (user_id, score, level, max_combo) VALUES (?, ?, ?, ?)",
+            (user_id, score, level, max_combo),
         )
 
 
@@ -80,12 +86,18 @@ def list_leaderboard(limit=10):
             """
             SELECT
                 u.username AS username,
-                MAX(s.score) AS score,
-                MAX(s.level) AS level
+                best.score AS score,
+                MAX(s.level) AS level,
+                MAX(s.max_combo) AS max_combo
             FROM scores AS s
             JOIN users AS u ON u.id = s.user_id
-            GROUP BY u.id, u.username
-            ORDER BY score DESC, level DESC, u.username ASC
+            JOIN (
+                SELECT user_id, MAX(score) AS score
+                FROM scores
+                GROUP BY user_id
+            ) AS best ON best.user_id = s.user_id AND best.score = s.score
+            GROUP BY u.id, u.username, best.score
+            ORDER BY best.score DESC, level DESC, u.username ASC
             LIMIT ?
             """,
             (limit,),

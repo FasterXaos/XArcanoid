@@ -1,4 +1,6 @@
 (() => {
+    const auth_card = document.getElementById("auth_card");
+    const player_name = document.getElementById("player_name");
     const auth_status = document.getElementById("auth_status");
     const auth_form = document.getElementById("auth_form");
     const auth_error = document.getElementById("auth_error");
@@ -49,11 +51,15 @@
 
     function render_auth() {
         if (current_user) {
-            auth_status.textContent = t("signed_in", { name: current_user.username });
-            auth_status.classList.remove("guest");
+            auth_card.classList.add("signed_in");
+            player_name.textContent = current_user.username;
+            player_name.classList.remove("hidden");
             auth_form.classList.add("hidden");
             logout_btn.classList.remove("hidden");
         } else {
+            auth_card.classList.remove("signed_in");
+            player_name.textContent = "";
+            player_name.classList.add("hidden");
             auth_status.textContent = t("guest_status");
             auth_status.classList.add("guest");
             auth_form.classList.remove("hidden");
@@ -75,7 +81,8 @@
             item.innerHTML =
                 '<span class="rank">' + (index + 1) + "</span>" +
                 "<span>" + escape_html(entry.username) + "</span>" +
-                "<span>" + entry.score + "</span>";
+                "<span>" + entry.score + "</span>" +
+                '<span class="combo">x' + (entry.max_combo || 0) + "</span>";
             leaderboard_list.appendChild(item);
         });
     }
@@ -249,7 +256,7 @@
             let text = t("over_stats", { score: result.score, level: result.level });
             if (current_user) {
                 try {
-                    await xarcanoid_api.submit_score(result.score, result.level);
+                    await xarcanoid_api.submit_score(result.score, result.level, result.max_combo || 0);
                     await refresh_leaderboard();
                     text += t("score_saved");
                 } catch (error) {

@@ -33,10 +33,10 @@ const xarcanoid_api = {
         return this.request("/api/logout", { method: "POST", body: "{}" });
     },
 
-    submit_score(score, level) {
+    submit_score(score, level, max_combo) {
         return this.request("/api/score", {
             method: "POST",
-            body: JSON.stringify({ score, level }),
+            body: JSON.stringify({ score, level, max_combo }),
         });
     },
 

@@ -32,6 +32,7 @@ const xarcanoid_game = (() => {
             start_speed: 260,
             hit_speed_cap: 460,
             level_speed_cap: 420,
+            hard_speed_cap: 960,
             score_mult: 0,
             counts_score: false,
         },
@@ -41,6 +42,7 @@ const xarcanoid_game = (() => {
             start_speed: 260,
             hit_speed_cap: 460,
             level_speed_cap: 420,
+            hard_speed_cap: 960,
             score_mult: 1,
             counts_score: true,
         },
@@ -50,6 +52,7 @@ const xarcanoid_game = (() => {
             start_speed: 340,
             hit_speed_cap: 560,
             level_speed_cap: 520,
+            hard_speed_cap: 1100,
             score_mult: 1.5,
             counts_score: true,
         },
@@ -61,6 +64,7 @@ const xarcanoid_game = (() => {
     let lives = 3;
     let level = 1;
     let combo = 0;
+    let max_combo = 0;
     let elapsed_s = 0;
 
     let paddle = { x: 0, y: 0, w: 88, h: 12, speed: 460 };
@@ -99,6 +103,7 @@ const xarcanoid_game = (() => {
         difficulty = difficulties[selected_difficulty_id] || difficulties.standard;
         score = 0;
         combo = 0;
+        max_combo = 0;
         elapsed_s = 0;
         lives = difficulty.lives;
         level = 1;
@@ -331,13 +336,13 @@ const xarcanoid_game = (() => {
     }
 
     function update(dt) {
-        elapsed_s += dt;
         move_paddle(dt);
         if (waiting_serve) {
             park_ball();
             report_hud();
             return;
         }
+        elapsed_s += dt;
 
         ball.x += ball.vx * dt;
         ball.y += ball.vy * dt;
@@ -360,6 +365,7 @@ const xarcanoid_game = (() => {
 
         if (ball.y - ball.r > height) {
             combo = 0;
+            ball.speed = Math.max(difficulty.start_speed, ball.speed * 0.93);
             if (!Number.isFinite(lives)) {
                 park_ball();
                 report_hud();
@@ -377,7 +383,7 @@ const xarcanoid_game = (() => {
 
         if (!bricks.some((brick) => brick.alive)) {
             level += 1;
-            ball.speed = Math.min(difficulty.level_speed_cap, ball.speed + 24);
+            apply_speed_gain(24, difficulty.level_speed_cap);
             reset_round(true);
             report_hud();
         }
@@ -411,8 +417,8 @@ const xarcanoid_game = (() => {
         const clamped = Math.max(-0.85, Math.min(0.85, hit));
         const angle = -Math.PI / 2 + clamped * 1.05;
         combo = 0;
-        const speed = Math.min(ball.speed + 8, difficulty.hit_speed_cap);
-        ball.speed = speed;
+        apply_speed_gain(8, difficulty.hit_speed_cap);
+        const speed = ball.speed;
         ball.vx = Math.cos(angle) * speed;
         ball.vy = Math.sin(angle) * speed;
         ball.y = paddle.y - ball.r - 0.5;
@@ -450,8 +456,31 @@ const xarcanoid_game = (() => {
         return Math.max(min, Math.min(max, value));
     }
 
+    function apply_speed_gain(gain, soft_cap) {
+        const hard_cap = difficulty.hard_speed_cap;
+        if (ball.speed >= hard_cap) {
+            return;
+        }
+        if (ball.speed < soft_cap) {
+            const room = soft_cap - ball.speed;
+            if (gain <= room) {
+                ball.speed += gain;
+                return;
+            }
+            ball.speed = soft_cap;
+            gain -= room;
+        }
+        if (gain <= 0) {
+            return;
+        }
+        ball.speed = Math.min(hard_cap, ball.speed + Math.max(0.35, gain * 0.12));
+    }
+
     function add_brick_score(base_points) {
         combo += 1;
+        if (combo > max_combo) {
+            max_combo = combo;
+        }
         if (!difficulty.counts_score) {
             return;
         }
@@ -478,6 +507,7 @@ const xarcanoid_game = (() => {
                 lives,
                 counts_score: difficulty.counts_score,
                 difficulty: difficulty.id,
+                max_combo,
             });
         }
     }
@@ -489,6 +519,7 @@ const xarcanoid_game = (() => {
                 lives,
                 level,
                 combo,
+                max_combo,
                 elapsed_s,
                 counts_score: difficulty.counts_score,
             });

@@ -1,4 +1,4 @@
-**XArcanoid** 0.4.0
+**XArcanoid** 0.4.1
 
 Browser Arkanoid with registration, sessions, and a leaderboard.
 
@@ -87,6 +87,9 @@ sudo systemctl stop nginx
 - Standard: current default rules
 - Overdrive: 1.5× points, faster ball, one life
 - Score uses difficulty, time, stage, remaining lives (fewer lives pay more), and combo; always floored to an integer
+- Best combo is stored and shown on the leaderboard
+- Timer counts only while the ball is in play
+- After a miss the ball loses a little speed; after the usual cap it still creeps up slowly
 - Guests can play; only signed-in players are written to the leaderboard
 - Language: RU / EN toggle to the left of the field
 - Themes: Night Arcade (default) and several others in the left panel
