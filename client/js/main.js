@@ -92,11 +92,13 @@
         leaderboard_empty.classList.add("hidden");
         entries.forEach((entry, index) => {
             const item = document.createElement("li");
+            const diff_key = "diff_tag_" + (entry.difficulty || "standard");
             item.innerHTML =
                 '<span class="rank">' + (index + 1) + "</span>" +
                 "<span>" + escape_html(entry.username) + "</span>" +
                 "<span>" + entry.score + "</span>" +
-                '<span class="combo">x' + (entry.max_combo || 0) + "</span>";
+                '<span class="combo">x' + (entry.max_combo || 0) + "</span>" +
+                '<span class="diff_tag">' + escape_html(t(diff_key)) + "</span>";
             leaderboard_list.appendChild(item);
         });
     }
@@ -408,7 +410,12 @@
             let text = t("over_stats", { score: result.score, level: result.level });
             if (current_user) {
                 try {
-                    await xarcanoid_api.submit_score(result.score, result.level, result.max_combo || 0);
+                    await xarcanoid_api.submit_score(
+                        result.score,
+                        result.level,
+                        result.max_combo || 0,
+                        result.difficulty || "standard",
+                    );
                     await refresh_leaderboard();
                     text += t("score_saved");
                 } catch (error) {

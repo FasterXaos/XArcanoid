@@ -10,6 +10,7 @@ CLIENT_DIR = ROOT_DIR / "client"
 
 MAX_SCORE = 999_999
 MAX_LEVEL = 99
+DIFFICULTIES = ("practice", "standard", "overdrive")
 
 
 def create_app():
@@ -90,6 +91,10 @@ def create_app():
         except (TypeError, ValueError):
             return json_error("bad_numbers")
 
+        difficulty = (payload.get("difficulty") or "standard").strip()
+        if difficulty not in DIFFICULTIES:
+            return json_error("bad_numbers")
+
         if score < 0 or score > MAX_SCORE:
             return json_error("bad_score")
         if level < 1 or level > MAX_LEVEL:
@@ -97,7 +102,7 @@ def create_app():
         if max_combo < 0 or max_combo > 9999:
             return json_error("bad_numbers")
 
-        db.insert_score(user["id"], score, level, max_combo)
+        db.insert_score(user["id"], score, level, max_combo, difficulty)
         return jsonify({"ok": True})
 
     @app.get("/api/leaderboard")

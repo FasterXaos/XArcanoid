@@ -1,4 +1,4 @@
-**XArcanoid** 0.5.1
+**XArcanoid** 0.5.2
 
 Browser Arkanoid with registration, sessions, and a leaderboard.
 

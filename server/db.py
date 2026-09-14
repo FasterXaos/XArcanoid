@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS scores (
     score INTEGER NOT NULL,
     level INTEGER NOT NULL DEFAULT 1,
     max_combo INTEGER NOT NULL DEFAULT 0,
+    difficulty TEXT NOT NULL DEFAULT 'standard',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -42,6 +43,10 @@ def init_db():
         if "max_combo" not in columns:
             connection.execute(
                 "ALTER TABLE scores ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0"
+            )
+        if "difficulty" not in columns:
+            connection.execute(
+                "ALTER TABLE scores ADD COLUMN difficulty TEXT NOT NULL DEFAULT 'standard'"
             )
 
 
@@ -72,11 +77,14 @@ def find_user_by_id(user_id):
         return dict(row) if row else None
 
 
-def insert_score(user_id, score, level, max_combo):
+def insert_score(user_id, score, level, max_combo, difficulty):
     with get_connection() as connection:
         connection.execute(
-            "INSERT INTO scores (user_id, score, level, max_combo) VALUES (?, ?, ?, ?)",
-            (user_id, score, level, max_combo),
+            """
+            INSERT INTO scores (user_id, score, level, max_combo, difficulty)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (user_id, score, level, max_combo, difficulty),
         )
 
 
@@ -86,18 +94,20 @@ def list_leaderboard(limit=10):
             """
             SELECT
                 u.username AS username,
-                best.score AS score,
-                MAX(s.level) AS level,
-                MAX(s.max_combo) AS max_combo
+                s.score AS score,
+                s.level AS level,
+                s.max_combo AS max_combo,
+                s.difficulty AS difficulty
             FROM scores AS s
             JOIN users AS u ON u.id = s.user_id
-            JOIN (
-                SELECT user_id, MAX(score) AS score
-                FROM scores
-                GROUP BY user_id
-            ) AS best ON best.user_id = s.user_id AND best.score = s.score
-            GROUP BY u.id, u.username, best.score
-            ORDER BY best.score DESC, level DESC, u.username ASC
+            WHERE s.id = (
+                SELECT s2.id
+                FROM scores AS s2
+                WHERE s2.user_id = s.user_id
+                ORDER BY s2.score DESC, s2.id DESC
+                LIMIT 1
+            )
+            ORDER BY s.score DESC, s.level DESC, u.username ASC
             LIMIT ?
             """,
             (limit,),

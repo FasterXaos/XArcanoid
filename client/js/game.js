@@ -38,6 +38,7 @@ const xarcanoid_game = (() => {
             hard_speed_cap: 960,
             score_mult: 0,
             counts_score: false,
+            paddle_width: 108,
         },
         standard: {
             id: "standard",
@@ -48,6 +49,7 @@ const xarcanoid_game = (() => {
             hard_speed_cap: 960,
             score_mult: 1,
             counts_score: true,
+            paddle_width: 88,
         },
         overdrive: {
             id: "overdrive",
@@ -58,6 +60,7 @@ const xarcanoid_game = (() => {
             hard_speed_cap: 1100,
             score_mult: 1.5,
             counts_score: true,
+            paddle_width: 70,
         },
     };
 
@@ -69,6 +72,7 @@ const xarcanoid_game = (() => {
     let combo = 0;
     let max_combo = 0;
     let elapsed_s = 0;
+    let last_hud_second = -1;
 
     let paddle = { x: 0, y: 0, w: 88, h: 12, speed: 460 };
     let ball = { x: 0, y: 0, r: 6, vx: 0, vy: 0, speed: 260 };
@@ -108,8 +112,10 @@ const xarcanoid_game = (() => {
         combo = 0;
         max_combo = 0;
         elapsed_s = 0;
+        last_hud_second = -1;
         lives = difficulty.lives;
         level = 1;
+        paddle.w = difficulty.paddle_width;
         ball.speed = difficulty.start_speed;
         running = true;
         waiting_serve = true;
@@ -352,10 +358,14 @@ const xarcanoid_game = (() => {
         move_paddle(dt);
         if (waiting_serve) {
             park_ball();
-            report_hud();
             return;
         }
         elapsed_s += dt;
+        const second = Math.floor(elapsed_s);
+        if (second !== last_hud_second) {
+            last_hud_second = second;
+            report_hud();
+        }
 
         ball.x += ball.vx * dt;
         ball.y += ball.vy * dt;
