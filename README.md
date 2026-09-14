@@ -1,4 +1,4 @@
-**XArcanoid** 0.5.0
+**XArcanoid** 0.5.1
 
 Browser Arkanoid with registration, sessions, and a leaderboard.
 
@@ -93,7 +93,7 @@ sudo systemctl stop nginx
 - Guests can play; only signed-in players are written to the leaderboard
 - Language: RU / EN toggle to the left of the field
 - Note and speaker buttons toggle a looping chiptune and hit sounds (Web Audio, no files)
-- i opens the bilingual guide; the gear opens volume sliders and theme selection
+- i opens the bilingual guide; the gear opens volume sliders, theme selection, and leaderboard visibility
 - Themes: Night Arcade (default) and several others in the left panel
 
 ## Layout

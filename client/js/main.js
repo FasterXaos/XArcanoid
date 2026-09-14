@@ -20,6 +20,8 @@
     const settings_sfx_on = document.getElementById("settings_sfx_on");
     const settings_music_vol = document.getElementById("settings_music_vol");
     const settings_sfx_vol = document.getElementById("settings_sfx_vol");
+    const settings_board_on = document.getElementById("settings_board_on");
+    const leaders_card = document.getElementById("leaders_card");
     const theme_select = document.getElementById("theme_select");
     const difficulty_select = document.getElementById("difficulty_select");
     const hud_combo = document.getElementById("hud_combo");
@@ -42,6 +44,7 @@
     let last_over = null;
     let last_auth_error = "";
     let leaderboard_failed = false;
+    let show_leaderboard = localStorage.getItem("xarcanoid_show_board") !== "0";
 
     function t(key, vars) {
         return xarcanoid_i18n.t(key, vars);
@@ -184,14 +187,25 @@
     }
 
     function render_audio_buttons() {
-        music_btn.classList.toggle("is_off", !xarcanoid_audio.is_music_on());
-        music_btn.setAttribute("aria-pressed", xarcanoid_audio.is_music_on() ? "true" : "false");
-        sfx_btn.classList.toggle("is_off", !xarcanoid_audio.is_sfx_on());
-        sfx_btn.setAttribute("aria-pressed", xarcanoid_audio.is_sfx_on() ? "true" : "false");
-        settings_music_on.checked = xarcanoid_audio.is_music_on();
-        settings_sfx_on.checked = xarcanoid_audio.is_sfx_on();
+        const music_on = xarcanoid_audio.is_music_on();
+        const sfx_on = xarcanoid_audio.is_sfx_on();
+        [music_btn, settings_music_on].forEach((btn) => {
+            btn.classList.toggle("is_off", !music_on);
+            btn.setAttribute("aria-pressed", music_on ? "true" : "false");
+        });
+        [sfx_btn, settings_sfx_on].forEach((btn) => {
+            btn.classList.toggle("is_off", !sfx_on);
+            btn.setAttribute("aria-pressed", sfx_on ? "true" : "false");
+        });
         settings_music_vol.value = String(Math.round(xarcanoid_audio.music_volume() * 100));
         settings_sfx_vol.value = String(Math.round(xarcanoid_audio.sfx_volume() * 100));
+        render_board_button();
+    }
+
+    function render_board_button() {
+        settings_board_on.classList.toggle("is_off", !show_leaderboard);
+        settings_board_on.setAttribute("aria-pressed", show_leaderboard ? "true" : "false");
+        leaders_card.classList.toggle("hidden", !show_leaderboard);
     }
 
     function open_modal(modal) {
@@ -275,19 +289,25 @@
         }
     });
 
-    settings_music_on.addEventListener("change", () => {
+    settings_music_on.addEventListener("click", () => {
         xarcanoid_audio.unlock();
-        xarcanoid_audio.set_music(settings_music_on.checked);
+        xarcanoid_audio.toggle_music();
         if (xarcanoid_audio.is_music_on() && xarcanoid_game.is_running()) {
             xarcanoid_audio.start_music();
         }
         render_audio_buttons();
     });
 
-    settings_sfx_on.addEventListener("change", () => {
+    settings_sfx_on.addEventListener("click", () => {
         xarcanoid_audio.unlock();
-        xarcanoid_audio.set_sfx(settings_sfx_on.checked);
+        xarcanoid_audio.toggle_sfx();
         render_audio_buttons();
+    });
+
+    settings_board_on.addEventListener("click", () => {
+        show_leaderboard = !show_leaderboard;
+        localStorage.setItem("xarcanoid_show_board", show_leaderboard ? "1" : "0");
+        render_board_button();
     });
 
     settings_music_vol.addEventListener("input", () => {
