@@ -44,4 +44,26 @@ const xarcanoid_api = {
         const query = mode ? "?mode=" + encodeURIComponent(mode) : "";
         return this.request("/api/leaderboard" + query);
     },
+
+    achievements() {
+        return this.request("/api/achievements");
+    },
+
+    unlock_achievement(id) {
+        return this.request("/api/achievements/unlock", {
+            method: "POST",
+            body: JSON.stringify({ id }),
+        });
+    },
+
+    achievement_progress(event, kind) {
+        const body = { event };
+        if (kind) {
+            body.kind = kind;
+        }
+        return this.request("/api/achievements/progress", {
+            method: "POST",
+            body: JSON.stringify(body),
+        });
+    },
 };

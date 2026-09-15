@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-09-14
+
+### Added
+
+- Achievements for signed-in players, including combo, score, Survival, campaign streak, power-ups, Sketch, settings, and platinum.
+- MIT license.
+- Optional HTTPS via `deploy/enable-https.sh` (Let's Encrypt if `DOMAIN` is set).
+
+### Changed
+
+- Music mutes when the browser tab or window loses focus.
+
 ## [0.8.0] - 2026-09-14
 
 ### Added

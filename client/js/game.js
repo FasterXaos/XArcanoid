@@ -266,6 +266,8 @@ const xarcanoid_game = (() => {
     let editing = false;
     let custom_grid = null;
     let hover_cell = null;
+    let cores_beaten = 0;
+    let last_power = null;
     const BOSS_LOOK = {
         bg: "#16060c",
         wall: "#4a1420",
@@ -315,6 +317,8 @@ const xarcanoid_game = (() => {
         last_hud_second = -1;
         last_layout_index = -1;
         core = null;
+        cores_beaten = 0;
+        last_power = null;
         lives = difficulty.lives;
         level = 1;
         drops = [];
@@ -456,6 +460,8 @@ const xarcanoid_game = (() => {
         size_effect = null;
         sticky_remain = 0;
         core = null;
+        cores_beaten = 0;
+        last_power = null;
         editing = false;
         hover_cell = null;
         paddle.w = difficulty.paddle_width;
@@ -481,14 +487,15 @@ const xarcanoid_game = (() => {
 
     function debug_clear_stage() {
         if (!running || difficulty.id !== "practice") {
-            return;
+            return false;
         }
         drops = [];
         if (core && core.hp > 0) {
             defeat_core();
-            return;
+            return true;
         }
         advance_level();
+        return true;
     }
 
     const FRAME = 6;
@@ -1156,6 +1163,7 @@ const xarcanoid_game = (() => {
     }
 
     function defeat_core() {
+        cores_beaten += 1;
         core = null;
         bricks = [];
         drops = [];
@@ -1482,6 +1490,7 @@ const xarcanoid_game = (() => {
     }
 
     function apply_power(kind) {
+        last_power = kind;
         if (kind === "wide") {
             size_effect = { kind: "wide", remain: power_duration };
             set_paddle_width(difficulty.paddle_width + 36);
@@ -1684,7 +1693,10 @@ const xarcanoid_game = (() => {
                 counts_score: difficulty.counts_score,
                 powerup: active_power_label(),
                 layout_id: core ? "core" : LEVELS[layout_index].id,
+                cores_beaten,
+                last_power,
             });
+            last_power = null;
         }
     }
 

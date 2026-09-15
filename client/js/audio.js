@@ -12,6 +12,7 @@ const xarcanoid_audio = (() => {
     let sfx_on = true;
     let music_vol = 1;
     let sfx_vol = 1;
+    let window_focused = true;
     let music_wanted = false;
     let ducked = false;
     let step = 0;
@@ -71,7 +72,7 @@ const xarcanoid_audio = (() => {
             sfx_gain.gain.value = sfx_on ? sfx_vol : 0;
         }
         if (music_gain) {
-            music_gain.gain.value = music_on ? 0.2 * music_vol : 0;
+            music_gain.gain.value = (music_on && window_focused) ? 0.2 * music_vol : 0;
         }
     }
 
@@ -142,6 +143,12 @@ const xarcanoid_audio = (() => {
         }
         if (name === "power_bad") {
             tone(220, 0.12, "sine", 0.2, sfx_gain, 140);
+            return;
+        }
+        if (name === "achieve") {
+            tone(523, 0.12, "triangle", 0.22, sfx_gain);
+            tone(659, 0.16, "sine", 0.18, sfx_gain);
+            tone(784, 0.22, "triangle", 0.16, sfx_gain);
         }
     }
 
@@ -218,6 +225,14 @@ const xarcanoid_audio = (() => {
         ducked = Boolean(value);
     }
 
+    function set_window_focus(on) {
+        window_focused = Boolean(on);
+        apply_gains();
+        if (ctx && window_focused && ctx.state === "suspended") {
+            ctx.resume();
+        }
+    }
+
     function set_boss_phase(phase) {
         boss_phase = Math.max(0, Math.floor(Number(phase) || 0));
     }
@@ -290,6 +305,7 @@ const xarcanoid_audio = (() => {
         start_music,
         stop_music,
         set_ducked,
+        set_window_focus,
         set_boss_phase,
         toggle_music,
         toggle_sfx,

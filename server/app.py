@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from server import auth, db
+from server import achievements, auth, db
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 CLIENT_DIR = ROOT_DIR / "client"
@@ -17,9 +18,10 @@ MODES = ("campaign", "survival")
 def create_app():
     app = Flask(__name__, static_folder=None)
     app.secret_key = os.environ.get("XARCANOID_SECRET", "dev-local-not-secret")
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    app.config["SESSION_COOKIE_SECURE"] = False
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get("XARCANOID_SECURE", "0") == "1"
 
     db.init_db()
 
@@ -58,6 +60,7 @@ def create_app():
 
         user_id = db.create_user(username, auth.hash_password(password))
         session["user_id"] = user_id
+        db.unlock_achievement(user_id, "new_player")
         return jsonify({"ok": True, "user": {"username": username}})
 
     @app.post("/api/login")
@@ -128,6 +131,78 @@ def create_app():
     @app.get("/js/<path:name>")
     def js_file(name):
         return send_from_directory(CLIENT_DIR / "js", name)
+
+    def maybe_platinum(user_id):
+        owned = db.list_unlocks(user_id)
+        if all(need in owned for need in achievements.PLATINUM_NEEDS):
+            db.unlock_achievement(user_id, "platinum")
+
+    def achievement_payload(user_id):
+        db.unlock_achievement(user_id, "new_player")
+        maybe_platinum(user_id)
+        total = max(1, db.count_users())
+        owned = db.list_unlocks(user_id)
+        counts = db.unlock_counts()
+        items = []
+        for ach_id in achievements.CATALOG:
+            unlocked = ach_id in owned
+            items.append({
+                "id": ach_id,
+                "unlocked": unlocked,
+                "unlocked_at": owned.get(ach_id),
+                "hidden": ach_id in achievements.HIDDEN and not unlocked,
+                "percent": round(100.0 * counts.get(ach_id, 0) / total, 1),
+                "holders": counts.get(ach_id, 0),
+                "players": db.count_users(),
+            })
+        return items
+
+    @app.get("/api/achievements")
+    def list_achievements():
+        user = current_user()
+        if not user:
+            return json_error("login_required", 401)
+        return jsonify({"ok": True, "items": achievement_payload(user["id"])})
+
+    @app.post("/api/achievements/unlock")
+    def unlock_achievement():
+        user = current_user()
+        if not user:
+            return json_error("login_required", 401)
+        payload = request.get_json(silent=True) or {}
+        ach_id = (payload.get("id") or "").strip()
+        if ach_id not in achievements.CATALOG or ach_id == "platinum":
+            return json_error("bad_numbers")
+        db.unlock_achievement(user["id"], ach_id)
+        maybe_platinum(user["id"])
+        return jsonify({"ok": True, "items": achievement_payload(user["id"])})
+
+    @app.post("/api/achievements/progress")
+    def achievement_progress():
+        user = current_user()
+        if not user:
+            return json_error("login_required", 401)
+        payload = request.get_json(silent=True) or {}
+        event = (payload.get("event") or "").strip()
+        progress = db.get_progress(user["id"])
+        if event == "campaign_loss":
+            streak = int(progress["campaign_loss_streak"]) + 1
+            db.set_progress(user["id"], streak, progress["powerups"])
+            if streak >= 5:
+                db.unlock_achievement(user["id"], "madness")
+        elif event == "campaign_win":
+            db.set_progress(user["id"], 0, progress["powerups"])
+        elif event == "powerup":
+            kind = (payload.get("kind") or "").strip()
+            if kind in achievements.POWER_KINDS:
+                have = [item for item in (progress["powerups"] or "").split(",") if item]
+                if kind not in have:
+                    have.append(kind)
+                db.set_progress(user["id"], int(progress["campaign_loss_streak"]), ",".join(have))
+                if all(item in have for item in achievements.POWER_KINDS):
+                    db.unlock_achievement(user["id"], "all_drops")
+        maybe_platinum(user["id"])
+        return jsonify({"ok": True, "items": achievement_payload(user["id"])})
 
     @app.get("/changelog")
     def changelog():

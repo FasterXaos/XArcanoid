@@ -43,6 +43,7 @@
     const overlay_text = document.getElementById("overlay_text");
     const start_btn = document.getElementById("start_btn");
     const canvas = document.getElementById("game_canvas");
+    const achievements_row = document.getElementById("achievements_row");
 
     let current_user = null;
     let overlay_mode = "intro";
@@ -51,6 +52,7 @@
     let last_auth_error = "";
     let leaderboard_failed = false;
     let my_rank = null;
+    let achievement_items = [];
     let show_leaderboard = localStorage.getItem("xarcanoid_show_board") !== "0";
 
     function t(key, vars) {
@@ -165,6 +167,9 @@
         leaders_mode_label.textContent = "· " + t("mode_" + mode_select.value);
         render_auth();
         render_overlay();
+        if (current_user && achievement_items.length) {
+            xarcanoid_achievements.render(achievements_row, achievement_items, t);
+        }
         if (leaderboard_failed) {
             leaderboard_empty.textContent = t("leaderboard_unavailable");
             leaderboard_empty.classList.remove("hidden");
@@ -177,6 +182,75 @@
         const payload = await xarcanoid_api.me();
         current_user = payload.user;
         render_auth();
+        await load_achievements();
+    }
+
+    async function load_achievements() {
+        if (!current_user) {
+            achievement_items = [];
+            achievements_row.classList.add("hidden");
+            achievements_row.innerHTML = "";
+            return;
+        }
+        try {
+            const payload = await xarcanoid_api.achievements();
+            achievement_items = payload.items || [];
+            achievements_row.classList.remove("hidden");
+            xarcanoid_achievements.render(achievements_row, achievement_items, t);
+        } catch (error) {
+            achievements_row.classList.add("hidden");
+        }
+    }
+
+    function apply_achievement_payload(items, before) {
+        achievement_items = items || [];
+        achievements_row.classList.remove("hidden");
+        xarcanoid_achievements.render(achievements_row, achievement_items, t);
+        const gained = achievement_items.some((item) => item.unlocked && !before[item.id]);
+        if (gained) {
+            xarcanoid_audio.play("achieve");
+        }
+    }
+
+    async function grant_achievement(id) {
+        if (!current_user) {
+            return;
+        }
+        const before = {};
+        achievement_items.forEach((item) => {
+            before[item.id] = item.unlocked;
+        });
+        if (before[id]) {
+            return;
+        }
+        try {
+            const payload = await xarcanoid_api.unlock_achievement(id);
+            apply_achievement_payload(payload.items, before);
+        } catch (error) {
+            // guest or unknown id
+        }
+    }
+
+    async function report_progress(event, kind) {
+        if (!current_user) {
+            return;
+        }
+        const before = {};
+        achievement_items.forEach((item) => {
+            before[item.id] = item.unlocked;
+        });
+        try {
+            const payload = await xarcanoid_api.achievement_progress(event, kind);
+            apply_achievement_payload(payload.items, before);
+        } catch (error) {
+            // ignore
+        }
+    }
+
+    function maybe_focus_achievement() {
+        if (!xarcanoid_audio.is_music_on() && !xarcanoid_audio.is_sfx_on()) {
+            grant_achievement("focus");
+        }
     }
 
     async function refresh_leaderboard() {
@@ -202,6 +276,7 @@
             current_user = payload.user;
             password_input.value = "";
             render_auth();
+            load_achievements();
         } catch (error) {
             set_auth_error(error.message);
         }
@@ -283,17 +358,20 @@
             xarcanoid_audio.start_music();
         }
         render_audio_buttons();
+        maybe_focus_achievement();
     });
 
     sfx_btn.addEventListener("click", () => {
         xarcanoid_audio.unlock();
         xarcanoid_audio.toggle_sfx();
         render_audio_buttons();
+        maybe_focus_achievement();
     });
 
     help_btn.addEventListener("click", () => {
         open_modal(help_modal);
         load_changelog();
+        grant_achievement("guide");
     });
 
     settings_btn.addEventListener("click", () => {
@@ -330,17 +408,22 @@
             xarcanoid_audio.start_music();
         }
         render_audio_buttons();
+        maybe_focus_achievement();
     });
 
     settings_sfx_on.addEventListener("click", () => {
         xarcanoid_audio.unlock();
         xarcanoid_audio.toggle_sfx();
         render_audio_buttons();
+        maybe_focus_achievement();
     });
 
     settings_board_on.addEventListener("click", () => {
         show_leaderboard = !show_leaderboard;
         localStorage.setItem("xarcanoid_show_board", show_leaderboard ? "1" : "0");
+        if (!show_leaderboard) {
+            grant_achievement("board_off");
+        }
         render_board_button();
     });
 
@@ -360,6 +443,7 @@
 
     theme_select.addEventListener("change", () => {
         xarcanoid_themes.apply(theme_select.value);
+        grant_achievement("theme");
     });
 
     difficulty_select.addEventListener("change", () => {
@@ -379,7 +463,9 @@
     });
 
     hud_score.addEventListener("click", () => {
-        xarcanoid_game.debug_clear_stage();
+        if (xarcanoid_game.debug_clear_stage()) {
+            grant_achievement("cheats");
+        }
     });
 
     overlay.addEventListener("click", (event) => {
@@ -391,14 +477,23 @@
         }
     });
 
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
+    function apply_window_focus() {
+        const on = document.visibilityState !== "hidden";
+        xarcanoid_audio.set_window_focus(on);
+        if (!on) {
             xarcanoid_game.pause();
         }
-    });
+    }
 
+    document.addEventListener("visibilitychange", apply_window_focus);
     window.addEventListener("blur", () => {
+        xarcanoid_audio.set_window_focus(false);
         xarcanoid_game.pause();
+    });
+    window.addEventListener("focus", () => {
+        if (document.visibilityState !== "hidden") {
+            xarcanoid_audio.set_window_focus(true);
+        }
     });
 
     auth_form.addEventListener("submit", (event) => {
@@ -414,6 +509,7 @@
         await xarcanoid_api.logout();
         current_user = null;
         render_auth();
+        load_achievements();
     });
 
     editor_start.addEventListener("click", () => {
@@ -468,16 +564,40 @@
             } else {
                 hud_power.textContent = hud.powerup.split("+").map((kind) => t("power_" + kind)).join(" · ");
             }
+            if (hud.combo >= 20) {
+                grant_achievement("combo20");
+            }
+            if (hud.counts_score && hud.score > 100000) {
+                grant_achievement("score100k");
+            }
+            if (hud.level >= 30 && mode_select.value === "survival") {
+                grant_achievement("survival30");
+            }
+            if ((hud.cores_beaten || 0) >= 2) {
+                grant_achievement("two_cores");
+            }
+            if (hud.last_power) {
+                report_progress("powerup", hud.last_power);
+            }
         },
         async (result) => {
             end_btn.classList.add("hidden");
             xarcanoid_audio.stop_music();
             xarcanoid_audio.set_ducked(false);
             if (result.mode === "custom") {
+                if (result.won) {
+                    grant_achievement("designer");
+                }
                 overlay_mode = "edit";
                 overlay.classList.add("hidden");
                 sync_custom_ui();
                 return;
+            }
+            if (result.mode === "campaign" && !result.campaign_win) {
+                report_progress("campaign_loss");
+            }
+            if (!result.won && result.mode !== "custom" && (result.max_combo || 0) === 0) {
+                grant_achievement("no_try");
             }
             if (!result.counts_score && !result.campaign_win) {
                 show_overlay_over(t("over_practice"));
@@ -505,6 +625,11 @@
                 text += t("score_need_login");
             }
             if (result.campaign_win) {
+                report_progress("campaign_win");
+                grant_achievement("finale");
+                if (result.difficulty === "overdrive") {
+                    grant_achievement("true_finale");
+                }
                 overlay_mode = "win";
                 last_over = { text };
                 render_overlay();

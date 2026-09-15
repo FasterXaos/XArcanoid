@@ -26,6 +26,21 @@ CREATE TABLE IF NOT EXISTS scores (
 );
 
 CREATE INDEX IF NOT EXISTS idx_scores_score ON scores(score DESC);
+
+CREATE TABLE IF NOT EXISTS achievement_unlocks (
+    user_id INTEGER NOT NULL,
+    achievement_id TEXT NOT NULL,
+    unlocked_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, achievement_id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS user_progress (
+    user_id INTEGER PRIMARY KEY,
+    campaign_loss_streak INTEGER NOT NULL DEFAULT 0,
+    powerups TEXT NOT NULL DEFAULT '',
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
 """
 
 
@@ -120,3 +135,74 @@ def list_leaderboard(limit=10, mode="survival"):
             (mode, limit),
         ).fetchall()
         return [dict(row) for row in rows]
+
+
+def count_users():
+    with get_connection() as connection:
+        row = connection.execute("SELECT COUNT(*) AS n FROM users").fetchone()
+        return int(row["n"] if row else 0)
+
+
+def list_unlocks(user_id):
+    with get_connection() as connection:
+        rows = connection.execute(
+            "SELECT achievement_id, unlocked_at FROM achievement_unlocks WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
+        return {row["achievement_id"]: row["unlocked_at"] for row in rows}
+
+
+def unlock_counts():
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT achievement_id, COUNT(*) AS n
+            FROM achievement_unlocks
+            GROUP BY achievement_id
+            """
+        ).fetchall()
+        return {row["achievement_id"]: int(row["n"]) for row in rows}
+
+
+def unlock_achievement(user_id, achievement_id):
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO achievement_unlocks (user_id, achievement_id)
+            VALUES (?, ?)
+            """,
+            (user_id, achievement_id),
+        )
+
+
+def get_progress(user_id):
+    with get_connection() as connection:
+        connection.execute(
+            "INSERT OR IGNORE INTO user_progress (user_id) VALUES (?)",
+            (user_id,),
+        )
+        row = connection.execute(
+            """
+            SELECT campaign_loss_streak, powerups
+            FROM user_progress
+            WHERE user_id = ?
+            """,
+            (user_id,),
+        ).fetchone()
+        if not row:
+            return {"campaign_loss_streak": 0, "powerups": ""}
+        return dict(row)
+
+
+def set_progress(user_id, campaign_loss_streak, powerups):
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO user_progress (user_id, campaign_loss_streak, powerups)
+            VALUES (?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                campaign_loss_streak = excluded.campaign_loss_streak,
+                powerups = excluded.powerups
+            """,
+            (user_id, campaign_loss_streak, powerups),
+        )

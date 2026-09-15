@@ -1,4 +1,4 @@
-**XArcanoid** 0.8.0
+**XArcanoid** 1.0.0
 
 Browser Arkanoid with registration, sessions, and a leaderboard.
 
@@ -57,6 +57,18 @@ sudo systemctl restart xarcanoid
 
 Open `http://<public-ip>/`.
 
+### HTTPS
+
+Browsers mark plain HTTP as "not secure". A lock without a warning needs a certificate from a public CA, and that needs a **domain name** pointing at the VM (Let's Encrypt does not issue for a raw IP). Then open 443 in the security group and run:
+
+```bash
+DOMAIN=your.domain.example bash deploy/enable-https.sh
+```
+
+Without a domain the same script can install a self-signed certificate (`bash deploy/enable-https.sh`). HTTPS will work, but the browser will still warn.
+
+Set `XARCANOID_SECURE=1` in `deploy/xarcanoid.env` when HTTPS is on so session cookies are marked Secure.
+
 ### 3. Useful commands
 
 ```bash
@@ -98,6 +110,8 @@ sudo systemctl stop nginx
 - Note and speaker buttons toggle a looping chiptune and hit sounds (Web Audio, no files)
 - i opens the bilingual guide; the gear opens volume sliders, theme selection, and leaderboard visibility
 - Ticker lines live in `client/js/ticker.js` (`xarcanoid_ticker_lines`)
+- Logged-in players get achievements under the court; progress is stored on the server
+- Licensed under MIT (`LICENSE`)
 - Themes: Night Arcade (default) and several others in the left panel
 
 ## Layout
