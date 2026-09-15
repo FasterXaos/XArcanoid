@@ -24,14 +24,18 @@
     const leaders_card = document.getElementById("leaders_card");
     const theme_select = document.getElementById("theme_select");
     const difficulty_select = document.getElementById("difficulty_select");
+    const mode_select = document.getElementById("mode_select");
+    const leaders_mode_label = document.getElementById("leaders_mode_label");
+    const hud_score = document.getElementById("hud_score");
     const hud_combo = document.getElementById("hud_combo");
     const hud_time = document.getElementById("hud_time");
     const end_btn = document.getElementById("end_btn");
     const leaderboard_list = document.getElementById("leaderboard_list");
     const leaderboard_empty = document.getElementById("leaderboard_empty");
-    const hud_score = document.getElementById("hud_score");
     const hud_lives = document.getElementById("hud_lives");
     const hud_level = document.getElementById("hud_level");
+    const hud_level_name = document.getElementById("hud_level_name");
+    const hud_power = document.getElementById("hud_power");
     const overlay = document.getElementById("overlay");
     const overlay_title = document.getElementById("overlay_title");
     const overlay_text = document.getElementById("overlay_text");
@@ -112,6 +116,12 @@
 
     function render_overlay() {
         start_btn.classList.remove("hidden");
+        if (overlay_mode === "win" && last_over) {
+            overlay_title.textContent = t("win_title");
+            overlay_text.textContent = last_over.text;
+            start_btn.textContent = t("play_again");
+            return;
+        }
         if (overlay_mode === "over" && last_over) {
             overlay_title.textContent = t("game_over");
             overlay_text.textContent = last_over.text;
@@ -144,6 +154,7 @@
 
     function apply_language() {
         xarcanoid_i18n.apply();
+        leaders_mode_label.textContent = "· " + t("mode_" + mode_select.value);
         render_auth();
         render_overlay();
         if (leaderboard_failed) {
@@ -162,7 +173,7 @@
 
     async function refresh_leaderboard() {
         try {
-            const payload = await xarcanoid_api.leaderboard();
+            const payload = await xarcanoid_api.leaderboard(mode_select.value);
             leaderboard_failed = false;
             render_leaderboard(payload.entries || []);
         } catch (error) {
@@ -334,6 +345,16 @@
         xarcanoid_game.set_difficulty(difficulty_select.value);
     });
 
+    mode_select.addEventListener("change", () => {
+        xarcanoid_game.set_game_mode(mode_select.value);
+        leaders_mode_label.textContent = "· " + t("mode_" + mode_select.value);
+        refresh_leaderboard();
+    });
+
+    hud_score.addEventListener("click", () => {
+        xarcanoid_game.debug_clear_stage();
+    });
+
     overlay.addEventListener("click", (event) => {
         if (event.target === start_btn) {
             return;
@@ -373,6 +394,7 @@
         overlay_mode = "playing";
         end_btn.classList.remove("hidden");
         xarcanoid_game.set_difficulty(difficulty_select.value);
+        xarcanoid_game.set_game_mode(mode_select.value);
         xarcanoid_audio.unlock();
         xarcanoid_audio.set_ducked(false);
         xarcanoid_audio.start_music();
@@ -394,35 +416,53 @@
         canvas,
         (hud) => {
             hud_score.textContent = hud.counts_score ? String(hud.score) : t("score_joke");
+            hud_score.classList.toggle("cheat_hint", !hud.counts_score);
             hud_combo.textContent = String(hud.combo);
             hud_time.textContent = format_time(hud.elapsed_s);
             hud_lives.textContent = Number.isFinite(hud.lives) ? String(hud.lives) : "∞";
             hud_level.textContent = String(hud.level);
+            hud_level_name.textContent = hud.layout_id ? t("level_" + hud.layout_id) : "";
+            if (!hud.powerup) {
+                hud_power.textContent = "—";
+            } else {
+                hud_power.textContent = hud.powerup.split("+").map((kind) => t("power_" + kind)).join(" · ");
+            }
         },
         async (result) => {
             end_btn.classList.add("hidden");
             xarcanoid_audio.stop_music();
             xarcanoid_audio.set_ducked(false);
-            if (!result.counts_score) {
+            if (!result.counts_score && !result.campaign_win) {
                 show_overlay_over(t("over_practice"));
                 return;
             }
-            let text = t("over_stats", { score: result.score, level: result.level });
-            if (current_user) {
+            const should_save = result.counts_score && (result.campaign_win || (result.mode === "survival" && !result.won));
+            let text = result.campaign_win
+                ? t("win_text", { score: result.score })
+                : t("over_stats", { score: result.score, level: result.level });
+            if (should_save && current_user) {
                 try {
                     await xarcanoid_api.submit_score(
                         result.score,
                         result.level,
                         result.max_combo || 0,
                         result.difficulty || "standard",
+                        result.mode || "survival",
                     );
                     await refresh_leaderboard();
                     text += t("score_saved");
                 } catch (error) {
                     text += t("score_save_fail", { error: translate_error(error.message) });
                 }
-            } else {
+            } else if (should_save && !current_user) {
                 text += t("score_need_login");
+            }
+            if (result.campaign_win) {
+                overlay_mode = "win";
+                last_over = { text };
+                render_overlay();
+                overlay.classList.remove("hidden");
+                return;
             }
             show_overlay_over(text);
         },
@@ -461,6 +501,7 @@
 
     xarcanoid_audio.load();
     render_audio_buttons();
+    xarcanoid_game.set_game_mode(mode_select.value);
     xarcanoid_i18n.load();
     apply_language();
     refresh_session().catch((error) => set_auth_error(error.message));

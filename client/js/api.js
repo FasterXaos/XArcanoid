@@ -33,14 +33,15 @@ const xarcanoid_api = {
         return this.request("/api/logout", { method: "POST", body: "{}" });
     },
 
-    submit_score(score, level, max_combo, difficulty) {
+    submit_score(score, level, max_combo, difficulty, mode) {
         return this.request("/api/score", {
             method: "POST",
-            body: JSON.stringify({ score, level, max_combo, difficulty }),
+            body: JSON.stringify({ score, level, max_combo, difficulty, mode }),
         });
     },
 
-    leaderboard() {
-        return this.request("/api/leaderboard");
+    leaderboard(mode) {
+        const query = mode ? "?mode=" + encodeURIComponent(mode) : "";
+        return this.request("/api/leaderboard" + query);
     },
 };

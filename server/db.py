@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS scores (
     level INTEGER NOT NULL DEFAULT 1,
     max_combo INTEGER NOT NULL DEFAULT 0,
     difficulty TEXT NOT NULL DEFAULT 'standard',
+    mode TEXT NOT NULL DEFAULT 'survival',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -47,6 +48,10 @@ def init_db():
         if "difficulty" not in columns:
             connection.execute(
                 "ALTER TABLE scores ADD COLUMN difficulty TEXT NOT NULL DEFAULT 'standard'"
+            )
+        if "mode" not in columns:
+            connection.execute(
+                "ALTER TABLE scores ADD COLUMN mode TEXT NOT NULL DEFAULT 'survival'"
             )
 
 
@@ -77,18 +82,18 @@ def find_user_by_id(user_id):
         return dict(row) if row else None
 
 
-def insert_score(user_id, score, level, max_combo, difficulty):
+def insert_score(user_id, score, level, max_combo, difficulty, mode):
     with get_connection() as connection:
         connection.execute(
             """
-            INSERT INTO scores (user_id, score, level, max_combo, difficulty)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO scores (user_id, score, level, max_combo, difficulty, mode)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (user_id, score, level, max_combo, difficulty),
+            (user_id, score, level, max_combo, difficulty, mode),
         )
 
 
-def list_leaderboard(limit=10):
+def list_leaderboard(limit=10, mode="survival"):
     with get_connection() as connection:
         rows = connection.execute(
             """
@@ -100,16 +105,18 @@ def list_leaderboard(limit=10):
                 s.difficulty AS difficulty
             FROM scores AS s
             JOIN users AS u ON u.id = s.user_id
-            WHERE s.id = (
+            WHERE s.mode = ?
+              AND s.id = (
                 SELECT s2.id
                 FROM scores AS s2
                 WHERE s2.user_id = s.user_id
+                  AND s2.mode = s.mode
                 ORDER BY s2.score DESC, s2.id DESC
                 LIMIT 1
             )
             ORDER BY s.score DESC, s.level DESC, u.username ASC
             LIMIT ?
             """,
-            (limit,),
+            (mode, limit),
         ).fetchall()
         return [dict(row) for row in rows]

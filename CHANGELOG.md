@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-09-14
+
+### Added
+
+- Falling power-ups from broken bricks (wide, thin, slow, fast, extra life, sticky paddle, bonus score), with drop chance and mix scaled by difficulty.
+- Ten named brick layouts on a larger court; after stage 10 the set loops at random. Armor bricks take two hits.
+- Campaign and Survival modes, a Core boss every 11th stage, and separate leaderboards. Practice still never records a score, and hides a small convenience for clearing a stage.
+
+### Changed
+
+- Playfield frame is the collision border on every theme, including Night Arcade.
+- Boss phases follow remaining HP share (about 16/26 and 6/26) and wait until the ball is outside the shell before rebuilding.
+- Core damage is shown as spreading cracks, not a number.
+
 ## [0.5.2] - 2026-09-14
 
 ### Added

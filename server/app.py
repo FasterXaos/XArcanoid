@@ -9,8 +9,9 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 CLIENT_DIR = ROOT_DIR / "client"
 
 MAX_SCORE = 999_999
-MAX_LEVEL = 99
+MAX_LEVEL = 9999
 DIFFICULTIES = ("practice", "standard", "overdrive")
+MODES = ("campaign", "survival")
 
 
 def create_app():
@@ -94,6 +95,9 @@ def create_app():
         difficulty = (payload.get("difficulty") or "standard").strip()
         if difficulty not in DIFFICULTIES:
             return json_error("bad_numbers")
+        mode = (payload.get("mode") or "survival").strip()
+        if mode not in MODES:
+            return json_error("bad_numbers")
 
         if score < 0 or score > MAX_SCORE:
             return json_error("bad_score")
@@ -102,12 +106,15 @@ def create_app():
         if max_combo < 0 or max_combo > 9999:
             return json_error("bad_numbers")
 
-        db.insert_score(user["id"], score, level, max_combo, difficulty)
+        db.insert_score(user["id"], score, level, max_combo, difficulty, mode)
         return jsonify({"ok": True})
 
     @app.get("/api/leaderboard")
     def leaderboard():
-        rows = db.list_leaderboard(10)
+        mode = (request.args.get("mode") or "survival").strip()
+        if mode not in MODES:
+            return json_error("bad_numbers")
+        rows = db.list_leaderboard(10, mode)
         return jsonify({"ok": True, "entries": rows})
 
     @app.get("/")

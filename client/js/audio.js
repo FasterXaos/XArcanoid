@@ -20,7 +20,10 @@ const xarcanoid_audio = (() => {
 
     const bass = [98, 98, 82.4, 82.4, 87.3, 87.3, 73.4, 73.4];
     const lead = [196, 246.9, 261.6, 196, 329.6, 261.6, 392, 246.9];
+    const boss_bass = [110, 110, 82.4, 73.4, 98, 98, 65.4, 82.4];
+    const boss_lead = [220, 329.6, 277.2, 370, 246.9, 392, 329.6, 493.9];
     const step_s = 0.22;
+    let boss_phase = 0;
 
     function read_flag(key, fallback) {
         const raw = localStorage.getItem(key);
@@ -131,6 +134,14 @@ const xarcanoid_audio = (() => {
         }
         if (name === "over") {
             tone(164, 0.32, "sine", 0.22, sfx_gain, 72);
+            return;
+        }
+        if (name === "power_good") {
+            tone(392, 0.1, "triangle", 0.2, sfx_gain, 523);
+            return;
+        }
+        if (name === "power_bad") {
+            tone(220, 0.12, "sine", 0.2, sfx_gain, 140);
         }
     }
 
@@ -160,11 +171,15 @@ const xarcanoid_audio = (() => {
         while (next_note_at < now + 0.35) {
             const i = step % bass.length;
             const volume = ducked ? 0.03 : 0.11;
-            tone(bass[i], 0.18, "triangle", volume, music_gain);
-            if (i % 2 === 0) {
-                tone(lead[i], 0.16, "square", volume * 0.55, music_gain);
+            const use_boss = boss_phase > 0;
+            const b = use_boss ? boss_bass : bass;
+            const l = use_boss ? boss_lead : lead;
+            const tempo = use_boss ? Math.max(0.09, 0.16 - (boss_phase - 1) * 0.025) : step_s;
+            tone(b[i], use_boss ? 0.14 : 0.18, "triangle", volume, music_gain);
+            if (use_boss || i % 2 === 0) {
+                tone(l[i], use_boss ? 0.12 : 0.16, "square", volume * (use_boss ? 0.7 : 0.55), music_gain);
             }
-            next_note_at += step_s;
+            next_note_at += tempo;
             step += 1;
         }
         timer = window.setTimeout(schedule_bar, 80);
@@ -192,6 +207,7 @@ const xarcanoid_audio = (() => {
 
     function stop_music() {
         music_wanted = false;
+        boss_phase = 0;
         if (timer) {
             window.clearTimeout(timer);
             timer = 0;
@@ -200,6 +216,10 @@ const xarcanoid_audio = (() => {
 
     function set_ducked(value) {
         ducked = Boolean(value);
+    }
+
+    function set_boss_phase(phase) {
+        boss_phase = Math.max(0, Math.floor(Number(phase) || 0));
     }
 
     function set_music(on) {
@@ -270,6 +290,7 @@ const xarcanoid_audio = (() => {
         start_music,
         stop_music,
         set_ducked,
+        set_boss_phase,
         toggle_music,
         toggle_sfx,
         set_music,

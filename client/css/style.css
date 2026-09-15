@@ -36,7 +36,7 @@ body {
 }
 
 .shell {
-    max-width: 1100px;
+    max-width: 1220px;
     margin: 0 auto;
 }
 
@@ -346,6 +346,18 @@ button.icon_btn.is_off {
     color: var(--text);
     font-size: 16px;
     margin-left: 6px;
+}
+
+.cheat_hint {
+    cursor: pointer;
+}
+
+.hud .level_name {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--accent-2);
 }
 
 .canvas_wrap {

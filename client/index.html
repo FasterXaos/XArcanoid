@@ -50,6 +50,14 @@
                 </div>
 
                 <label class="theme_picker">
+                    <span data-i18n="mode">Режим</span>
+                    <select id="mode_select">
+                        <option value="campaign" selected data-i18n="mode_campaign">Кампания</option>
+                        <option value="survival" data-i18n="mode_survival">Выживание</option>
+                    </select>
+                </label>
+
+                <label class="theme_picker">
                     <span data-i18n="difficulty">Сложность</span>
                     <select id="difficulty_select">
                         <option value="practice" data-i18n="diff_practice">Тренировка</option>
@@ -85,7 +93,7 @@
                 </section>
 
                 <section class="card" id="leaders_card">
-                    <h2 data-i18n="leaders">Лидеры</h2>
+                    <h2><span data-i18n="leaders">Лидеры</span> <span id="leaders_mode_label"></span></h2>
                     <ol id="leaderboard_list" class="leaderboard"></ol>
                     <p class="hint" id="leaderboard_empty" data-i18n="leaderboard_empty">Пока пусто — сломай пару кирпичей.</p>
                 </section>
@@ -97,10 +105,11 @@
                     <span><span data-i18n="combo">комбо</span> <strong id="hud_combo">0</strong></span>
                     <span><span data-i18n="time">время</span> <strong id="hud_time">0:00</strong></span>
                     <span><span data-i18n="lives">жизни</span> <strong id="hud_lives">3</strong></span>
-                    <span><span data-i18n="level">уровень</span> <strong id="hud_level">1</strong></span>
+                    <span><span data-i18n="level">уровень</span> <strong id="hud_level">1</strong> <strong id="hud_level_name" class="level_name"></strong></span>
+                    <span><span data-i18n="power">бонус</span> <strong id="hud_power">—</strong></span>
                 </div>
                 <div class="canvas_wrap">
-                    <canvas id="game_canvas" width="720" height="480"></canvas>
+                    <canvas id="game_canvas" width="860" height="560"></canvas>
                     <div id="overlay" class="overlay">
                         <p id="overlay_title">XArcanoid</p>
                         <p id="overlay_text">Стрелки или A/D — каретка. Пробел — пуск шара.</p>
