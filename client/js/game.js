@@ -46,6 +46,7 @@ const xarcanoid_game = (() => {
                 { kind: "life", weight: 16 },
                 { kind: "sticky", weight: 14 },
                 { kind: "score", weight: 16 },
+                { kind: "dual", weight: 12 },
                 { kind: "narrow", weight: 8 },
                 { kind: "fast", weight: 6 },
             ],
@@ -67,6 +68,7 @@ const xarcanoid_game = (() => {
                 { kind: "life", weight: 10 },
                 { kind: "sticky", weight: 12 },
                 { kind: "score", weight: 12 },
+                { kind: "dual", weight: 10 },
                 { kind: "narrow", weight: 16 },
                 { kind: "fast", weight: 20 },
             ],
@@ -88,6 +90,7 @@ const xarcanoid_game = (() => {
                 { kind: "life", weight: 4 },
                 { kind: "sticky", weight: 8 },
                 { kind: "score", weight: 10 },
+                { kind: "dual", weight: 6 },
                 { kind: "narrow", weight: 28 },
                 { kind: "fast", weight: 34 },
             ],
@@ -247,11 +250,13 @@ const xarcanoid_game = (() => {
         life: { fill: "#7cff9a", mark: "+" },
         sticky: { fill: "#c9a6ff", mark: "C" },
         score: { fill: "#f5d76e", mark: "$" },
+        dual: { fill: "#e8eef8", mark: "2" },
     };
     const power_duration = 10;
 
     let paddle = { x: 0, y: 0, w: 88, h: 12, speed: 460 };
-    let ball = { x: 0, y: 0, r: 6, vx: 0, vy: 0, speed: 260 };
+    let balls = [];
+    let pointer_held = false;
     let bricks = [];
     let drops = [];
     let size_effect = null;
@@ -282,21 +287,17 @@ const xarcanoid_game = (() => {
 
         window.addEventListener("keydown", on_key_down);
         window.addEventListener("keyup", on_key_up);
-        canvas.addEventListener("mousemove", on_mouse_move);
-        canvas.addEventListener("mouseleave", () => {
-            mouse_x = null;
+        canvas.addEventListener("pointerdown", on_pointer_down);
+        canvas.addEventListener("pointermove", on_pointer_move);
+        canvas.addEventListener("pointerup", on_pointer_up);
+        canvas.addEventListener("pointercancel", on_pointer_up);
+        canvas.addEventListener("pointerleave", () => {
+            if (!pointer_held) {
+                mouse_x = null;
+            }
             if (editing) {
                 hover_cell = null;
                 draw();
-            }
-        });
-        canvas.addEventListener("click", (event) => {
-            if (editing) {
-                paint_custom_cell(event);
-                return;
-            }
-            if (running && waiting_serve && pause_state === "off") {
-                serve_ball();
             }
         });
 
@@ -320,7 +321,7 @@ const xarcanoid_game = (() => {
         size_effect = null;
         sticky_remain = 0;
         paddle.w = difficulty.paddle_width;
-        ball.speed = difficulty.start_speed;
+        reset_balls();
         running = true;
         waiting_serve = true;
         pause_state = "off";
@@ -377,7 +378,7 @@ const xarcanoid_game = (() => {
         paddle.w = difficulty.paddle_width;
         paddle.y = bound_bottom() - 20;
         paddle.x = clamp((width - paddle.w) / 2, bound_left(), bound_right() - paddle.w);
-        park_ball();
+        reset_balls();
         draw();
         report_hud();
     }
@@ -458,11 +459,11 @@ const xarcanoid_game = (() => {
         editing = false;
         hover_cell = null;
         paddle.w = difficulty.paddle_width;
-        ball.speed = difficulty.start_speed;
+        reset_balls();
         bricks = build_custom_bricks();
         paddle.y = bound_bottom() - 20;
         paddle.x = clamp((width - paddle.w) / 2, bound_left(), bound_right() - paddle.w);
-        park_ball();
+        layout_parked();
         running = true;
         waiting_serve = true;
         pause_state = "countdown";
@@ -630,8 +631,8 @@ const xarcanoid_game = (() => {
                 request_resume();
                 return;
             }
-            if (waiting_serve) {
-                serve_ball();
+            if (balls.some((item) => item.parked)) {
+                serve_one();
                 return;
             }
             pause();
@@ -661,43 +662,117 @@ const xarcanoid_game = (() => {
         }
     }
 
-    function on_mouse_move(event) {
+    function pointer_pos(event) {
         const rect = canvas.getBoundingClientRect();
-        const scale = width / rect.width;
-        const mx = (event.clientX - rect.left) * scale;
-        const my = (event.clientY - rect.top) * (height / rect.height);
-        mouse_x = mx;
+        return {
+            x: (event.clientX - rect.left) * (width / rect.width),
+            y: (event.clientY - rect.top) * (height / rect.height),
+        };
+    }
+
+    function on_pointer_down(event) {
         if (editing) {
-            hover_cell = cell_at(mx, my);
-            draw();
+            paint_custom_cell(event);
+            return;
         }
+        pointer_held = true;
+        try {
+            canvas.setPointerCapture(event.pointerId);
+        } catch (err) {
+            // ignore
+        }
+        const pos = pointer_pos(event);
+        mouse_x = pos.x;
+        if (running && pause_state === "off" && balls.some((item) => item.parked)) {
+            serve_one();
+        }
+    }
+
+    function on_pointer_move(event) {
+        const pos = pointer_pos(event);
+        if (editing) {
+            hover_cell = cell_at(pos.x, pos.y);
+            draw();
+            return;
+        }
+        if (event.pointerType === "mouse" || pointer_held) {
+            mouse_x = pos.x;
+        }
+    }
+
+    function on_pointer_up() {
+        pointer_held = false;
+    }
+
+    function create_ball(speed) {
+        return {
+            x: paddle.x + paddle.w / 2,
+            y: paddle.y - 7,
+            r: 6,
+            vx: 0,
+            vy: 0,
+            speed: speed || difficulty.start_speed,
+            parked: true,
+            touching_core: false,
+        };
+    }
+
+    function reset_balls() {
+        balls = [create_ball(difficulty.start_speed)];
+        layout_parked();
+    }
+
+    function layout_parked() {
+        const parked = balls.filter((item) => item.parked);
+        parked.forEach((item, index) => {
+            item.vx = 0;
+            item.vy = 0;
+            item.x = paddle.x + paddle.w / 2 + (index - (parked.length - 1) / 2) * (item.r * 2.5);
+            item.y = paddle.y - item.r - 1;
+        });
+    }
+
+    function serve_one() {
+        const parked = balls.filter((item) => item.parked);
+        if (!parked.length) {
+            return;
+        }
+        const item = parked[0];
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        const angle = (-Math.PI / 2) + dir * (0.35 + Math.random() * 0.25);
+        item.parked = false;
+        item.vx = Math.cos(angle) * item.speed;
+        item.vy = Math.sin(angle) * item.speed;
+        waiting_serve = balls.every((entry) => entry.parked);
+        play_sfx("serve");
+        layout_parked();
+    }
+
+    function serve_all() {
+        while (balls.some((item) => item.parked)) {
+            serve_one();
+        }
+    }
+
+    function max_ball_speed() {
+        let speed = difficulty.start_speed;
+        balls.forEach((item) => {
+            if (item.speed > speed) {
+                speed = item.speed;
+            }
+        });
+        return speed;
     }
 
     function reset_round(rebuild_bricks) {
         paddle.y = bound_bottom() - 20;
         paddle.x = clamp((width - paddle.w) / 2, bound_left(), bound_right() - paddle.w);
-        park_ball();
+        reset_balls();
+        waiting_serve = true;
         if (rebuild_bricks) {
             core = null;
             bricks = build_bricks();
         }
-    }
-
-    function park_ball() {
-        ball.x = paddle.x + paddle.w / 2;
-        ball.y = paddle.y - ball.r - 1;
-        ball.vx = 0;
-        ball.vy = 0;
-        waiting_serve = true;
-    }
-
-    function serve_ball() {
-        const dir = Math.random() < 0.5 ? -1 : 1;
-        const angle = (-Math.PI / 2) + dir * (0.35 + Math.random() * 0.25);
-        ball.vx = Math.cos(angle) * ball.speed;
-        ball.vy = Math.sin(angle) * ball.speed;
-        waiting_serve = false;
-        play_sfx("serve");
     }
 
     function choose_layout() {
@@ -790,6 +865,9 @@ const xarcanoid_game = (() => {
                     continue;
                 }
                 const rect = cell_rect(grid, col, row);
+                if (rect_near_any_ball(rect, 22)) {
+                    continue;
+                }
                 const hp = kind === "armor" ? 2 : 1;
                 list.push({
                     x: rect.x + core.shift,
@@ -864,7 +942,7 @@ const xarcanoid_game = (() => {
             max_x = Math.max(max_x, brick.x + brick.w);
             max_y = Math.max(max_y, brick.y + brick.h);
         });
-        const pad = ball.r + 2;
+        const pad = 34;
         return {
             min_x: min_x - pad,
             min_y: min_y - pad,
@@ -873,12 +951,16 @@ const xarcanoid_game = (() => {
         };
     }
 
+    function item_outside_box(item, box) {
+        return item.x + item.r < box.min_x
+            || item.x - item.r > box.max_x
+            || item.y + item.r < box.min_y
+            || item.y - item.r > box.max_y;
+    }
+
     function ball_outside_boss_frame() {
         const box = boss_shell_box();
-        return ball.x + ball.r < box.min_x
-            || ball.x - ball.r > box.max_x
-            || ball.y + ball.r < box.min_y
-            || ball.y - ball.r > box.max_y;
+        return balls.every((item) => item.parked || item_outside_box(item, box));
     }
 
     function apply_boss_phase() {
@@ -903,6 +985,8 @@ const xarcanoid_game = (() => {
         core.pending_phase = wanted;
         core.vx = Math.sign(core.vx || 1) * vx;
         bricks = bricks.filter((brick) => brick.kind === "spawn" && brick.alive).concat(make_shell("armor"));
+        clamp_boss_shift();
+        sync_boss_positions();
         if (typeof xarcanoid_audio !== "undefined") {
             xarcanoid_audio.set_boss_phase(wanted);
         }
@@ -932,31 +1016,61 @@ const xarcanoid_game = (() => {
         return list[Math.floor(Math.random() * list.length)];
     }
 
-    function update_boss(dt) {
-        if (!core || core.hp <= 0) {
-            return;
-        }
-        core.shift += core.vx * dt;
-        let min_x = core.base_x + core.shift;
-        let max_x = min_x + core.w;
+    function boss_rail_limits() {
+        const gap = 6;
+        let min_base = core.base_x;
+        let max_base = core.base_x + core.w;
         bricks.forEach((brick) => {
             if (!brick.alive || brick.kind === "spawn" || brick.base_x === undefined) {
                 return;
             }
-            const x = brick.base_x + core.shift;
-            min_x = Math.min(min_x, x);
-            max_x = Math.max(max_x, x + brick.w);
+            min_base = Math.min(min_base, brick.base_x);
+            max_base = Math.max(max_base, brick.base_x + brick.w);
         });
-        if (min_x < bound_left() || max_x > bound_right()) {
-            core.vx *= -1;
-            core.shift += core.vx * dt;
+        return {
+            min_shift: bound_left() + gap - min_base,
+            max_shift: bound_right() - gap - max_base,
+        };
+    }
+
+    function clamp_boss_shift() {
+        const rail = boss_rail_limits();
+        if (rail.min_shift > rail.max_shift) {
+            core.shift = (rail.min_shift + rail.max_shift) / 2;
+            return "mid";
         }
+        if (core.shift <= rail.min_shift) {
+            core.shift = rail.min_shift;
+            return "left";
+        }
+        if (core.shift >= rail.max_shift) {
+            core.shift = rail.max_shift;
+            return "right";
+        }
+        return "ok";
+    }
+
+    function sync_boss_positions() {
         core.x = core.base_x + core.shift;
         bricks.forEach((brick) => {
             if (brick.kind !== "spawn" && brick.base_x !== undefined) {
                 brick.x = brick.base_x + core.shift;
             }
         });
+    }
+
+    function update_boss(dt) {
+        if (!core || core.hp <= 0) {
+            return;
+        }
+        core.shift += core.vx * dt;
+        const hit = clamp_boss_shift();
+        if (hit === "left") {
+            core.vx = Math.abs(core.vx);
+        } else if (hit === "right") {
+            core.vx = -Math.abs(core.vx);
+        }
+        sync_boss_positions();
         try_apply_boss_phase();
         if (core.phase >= 3) {
             core.spawn_t += dt;
@@ -983,6 +1097,9 @@ const xarcanoid_game = (() => {
             return;
         }
         const rect = cell_rect(grid, col, row);
+        if (rect_near_any_ball(rect, 22)) {
+            return;
+        }
         const hp = Math.random() < 0.45 ? 2 : 1;
         bricks.push({
             x: rect.x,
@@ -999,20 +1116,32 @@ const xarcanoid_game = (() => {
         });
     }
 
-    function bounce_core() {
+    function rect_near_any_ball(rect, gap) {
+        return balls.some((item) => {
+            if (item.parked) {
+                return false;
+            }
+            return !(item.x + item.r + gap < rect.x
+                || item.x - item.r - gap > rect.x + rect.w
+                || item.y + item.r + gap < rect.y
+                || item.y - item.r - gap > rect.y + rect.h);
+        });
+    }
+
+    function bounce_core_item(item) {
         if (!core || core.hp <= 0) {
             return false;
         }
-        if (!circle_hits_rect(ball, core)) {
+        const hit = circle_hits_rect(item, core);
+        if (!hit) {
+            item.touching_core = false;
             return false;
         }
-        const closest_x = clamp(ball.x, core.x, core.x + core.w);
-        const closest_y = clamp(ball.y, core.y, core.y + core.h);
-        if (Math.abs(ball.x - closest_x) > Math.abs(ball.y - closest_y)) {
-            ball.vx *= -1;
-        } else {
-            ball.vy *= -1;
+        bounce_and_separate(item, core);
+        if (item.touching_core) {
+            return false;
         }
+        item.touching_core = true;
         core.hp -= 1;
         core.hits += 1;
         play_sfx("paddle");
@@ -1074,8 +1203,10 @@ const xarcanoid_game = (() => {
         tick_effects(dt);
         update_drops(dt);
         move_paddle(dt);
-        if (waiting_serve) {
-            park_ball();
+        layout_parked();
+        const classic_wait = balls.every((item) => item.parked) && sticky_remain <= 0;
+        waiting_serve = classic_wait;
+        if (classic_wait) {
             return;
         }
         elapsed_s += dt;
@@ -1085,52 +1216,42 @@ const xarcanoid_game = (() => {
             report_hud();
         }
 
-        ball.x += ball.vx * dt;
-        ball.y += ball.vy * dt;
-
-        if (ball.x - ball.r < bound_left()) {
-            ball.x = bound_left() + ball.r;
-            ball.vx *= -1;
-            play_sfx("wall");
+        const fallen = [];
+        balls.forEach((item) => {
+            if (item.parked) {
+                return;
+            }
+            if (step_ball(item, dt)) {
+                fallen.push(item);
+            }
+        });
+        if (fallen.length) {
+            combo = 0;
+            play_sfx("fall");
+            balls = balls.filter((item) => fallen.indexOf(item) === -1);
+            if (!balls.length) {
+                if (!Number.isFinite(lives)) {
+                    reset_balls();
+                    waiting_serve = true;
+                    report_hud();
+                    return;
+                }
+                lives -= 1;
+                report_hud();
+                if (lives <= 0) {
+                    finish(false);
+                    return;
+                }
+                reset_balls();
+                waiting_serve = true;
+            }
         }
-        if (ball.x + ball.r > bound_right()) {
-            ball.x = bound_right() - ball.r;
-            ball.vx *= -1;
-            play_sfx("wall");
-        }
-        if (ball.y - ball.r < bound_top()) {
-            ball.y = bound_top() + ball.r;
-            ball.vy *= -1;
-            play_sfx("wall");
-        }
-
-        bounce_paddle();
-        bounce_bricks();
-        if (bounce_core()) {
+        if (!running) {
             return;
         }
         update_boss(dt);
         if (!running) {
             return;
-        }
-
-        if (ball.y - ball.r > bound_bottom()) {
-            combo = 0;
-            ball.speed = Math.max(difficulty.start_speed, ball.speed * 0.93);
-            play_sfx("fall");
-            if (!Number.isFinite(lives)) {
-                park_ball();
-                report_hud();
-                return;
-            }
-            lives -= 1;
-            report_hud();
-            if (lives <= 0) {
-                finish(false);
-                return;
-            }
-            waiting_serve = true;
-            park_ball();
         }
 
         if ((!core || core.hp <= 0) && !bricks.some((brick) => brick.alive)) {
@@ -1140,6 +1261,43 @@ const xarcanoid_game = (() => {
             }
             advance_level();
         }
+    }
+
+    function step_ball(item, dt) {
+        const dist = Math.hypot(item.vx, item.vy) * dt;
+        const steps = Math.max(1, Math.ceil(dist / 5));
+        const sdt = dt / steps;
+        for (let i = 0; i < steps; i += 1) {
+            if (item.parked) {
+                return false;
+            }
+            item.x += item.vx * sdt;
+            item.y += item.vy * sdt;
+            if (item.x - item.r < bound_left()) {
+                item.x = bound_left() + item.r;
+                item.vx = Math.abs(item.vx);
+                play_sfx("wall");
+            }
+            if (item.x + item.r > bound_right()) {
+                item.x = bound_right() - item.r;
+                item.vx = -Math.abs(item.vx);
+                play_sfx("wall");
+            }
+            if (item.y - item.r < bound_top()) {
+                item.y = bound_top() + item.r;
+                item.vy = Math.abs(item.vy);
+                play_sfx("wall");
+            }
+            bounce_paddle_item(item);
+            bounce_bricks_item(item);
+            if (bounce_core_item(item)) {
+                return false;
+            }
+            if (item.y + item.r >= bound_bottom()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function advance_level() {
@@ -1169,37 +1327,76 @@ const xarcanoid_game = (() => {
         paddle.x = Math.max(bound_left(), Math.min(bound_right() - paddle.w, paddle.x));
     }
 
-    function bounce_paddle() {
-        if (ball.vy < 0) {
+    function bounce_and_separate(item, rect) {
+        const closest_x = clamp(item.x, rect.x, rect.x + rect.w);
+        const closest_y = clamp(item.y, rect.y, rect.y + rect.h);
+        let dx = item.x - closest_x;
+        let dy = item.y - closest_y;
+        if (dx === 0 && dy === 0) {
+            const left = item.x - rect.x;
+            const right = rect.x + rect.w - item.x;
+            const top = item.y - rect.y;
+            const bottom = rect.y + rect.h - item.y;
+            const smallest = Math.min(left, right, top, bottom);
+            if (smallest === left) {
+                item.x = rect.x - item.r - 0.6;
+                item.vx = -Math.abs(item.vx);
+            } else if (smallest === right) {
+                item.x = rect.x + rect.w + item.r + 0.6;
+                item.vx = Math.abs(item.vx);
+            } else if (smallest === top) {
+                item.y = rect.y - item.r - 0.6;
+                item.vy = -Math.abs(item.vy);
+            } else {
+                item.y = rect.y + rect.h + item.r + 0.6;
+                item.vy = Math.abs(item.vy);
+            }
             return;
         }
-        const within_x = ball.x + ball.r > paddle.x && ball.x - ball.r < paddle.x + paddle.w;
-        const hitting_top = ball.y + ball.r >= paddle.y && ball.y + ball.r <= paddle.y + paddle.h;
+        if (Math.abs(dx) > Math.abs(dy)) {
+            item.vx = dx > 0 ? Math.abs(item.vx) : -Math.abs(item.vx);
+        } else {
+            item.vy = dy > 0 ? Math.abs(item.vy) : -Math.abs(item.vy);
+        }
+        const dist = Math.hypot(dx, dy) || 1;
+        const push = item.r + 0.6 - dist;
+        if (push > 0) {
+            item.x += (dx / dist) * push;
+            item.y += (dy / dist) * push;
+        }
+    }
+
+    function bounce_paddle_item(item) {
+        if (item.parked || item.vy < 0) {
+            return;
+        }
+        const within_x = item.x + item.r > paddle.x && item.x - item.r < paddle.x + paddle.w;
+        const hitting_top = item.y + item.r >= paddle.y && item.y + item.r <= paddle.y + paddle.h;
         if (!within_x || !hitting_top) {
             return;
         }
-        const hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+        const hit = (item.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
         const clamped = Math.max(-0.85, Math.min(0.85, hit));
         const angle = -Math.PI / 2 + clamped * 1.05;
         combo = 0;
         play_sfx("paddle");
         if (sticky_remain > 0) {
-            sticky_remain = 0;
-            park_ball();
+            item.parked = true;
+            layout_parked();
             report_hud();
             return;
         }
         apply_speed_gain(8, difficulty.hit_speed_cap);
-        const speed = ball.speed;
-        ball.vx = Math.cos(angle) * speed;
-        ball.vy = Math.sin(angle) * speed;
-        ball.y = paddle.y - ball.r - 0.5;
+        item.speed = max_ball_speed();
+        item.vx = Math.cos(angle) * item.speed;
+        item.vy = Math.sin(angle) * item.speed;
+        item.y = paddle.y - item.r - 0.5;
         report_hud();
     }
 
-    function bounce_bricks() {
+    function bounce_bricks_item(item) {
         for (const brick of bricks) {
-            if (!brick.alive || !circle_hits_rect(ball, brick)) {
+            if (!brick.alive || !circle_hits_rect(item, brick)) {
                 continue;
             }
             if (brick.hp > 1) {
@@ -1211,13 +1408,7 @@ const xarcanoid_game = (() => {
                 add_brick_score(brick.points);
                 maybe_drop(brick);
             }
-            const closest_x = clamp(ball.x, brick.x, brick.x + brick.w);
-            const closest_y = clamp(ball.y, brick.y, brick.y + brick.h);
-            if (Math.abs(ball.x - closest_x) > Math.abs(ball.y - closest_y)) {
-                ball.vx *= -1;
-            } else {
-                ball.vy *= -1;
-            }
+            bounce_and_separate(item, brick);
             report_hud();
             break;
         }
@@ -1279,12 +1470,15 @@ const xarcanoid_game = (() => {
     }
 
     function set_ball_speed_now(next_speed) {
-        const mag = Math.hypot(ball.vx, ball.vy);
-        ball.speed = clamp(next_speed, difficulty.start_speed * 0.7, difficulty.hard_speed_cap);
-        if (mag > 1 && !waiting_serve) {
-            ball.vx = (ball.vx / mag) * ball.speed;
-            ball.vy = (ball.vy / mag) * ball.speed;
-        }
+        const speed = clamp(next_speed, difficulty.start_speed * 0.7, difficulty.hard_speed_cap);
+        balls.forEach((item) => {
+            const mag = Math.hypot(item.vx, item.vy);
+            item.speed = speed;
+            if (mag > 1 && !item.parked) {
+                item.vx = (item.vx / mag) * speed;
+                item.vy = (item.vy / mag) * speed;
+            }
+        });
     }
 
     function apply_power(kind) {
@@ -1301,13 +1495,27 @@ const xarcanoid_game = (() => {
             return;
         }
         if (kind === "slow") {
-            set_ball_speed_now(ball.speed * 0.82);
+            set_ball_speed_now(max_ball_speed() * 0.82);
             play_sfx("power_good");
             return;
         }
         if (kind === "fast") {
-            set_ball_speed_now(ball.speed * 1.18);
+            set_ball_speed_now(max_ball_speed() * 1.18);
             play_sfx("power_bad");
+            return;
+        }
+        if (kind === "dual") {
+            const extra = create_ball(max_ball_speed());
+            balls.push(extra);
+            if (sticky_remain > 0) {
+                extra.parked = true;
+                layout_parked();
+            } else {
+                extra.parked = true;
+                layout_parked();
+                serve_one();
+            }
+            play_sfx("power_good");
             return;
         }
         if (kind === "life") {
@@ -1350,6 +1558,9 @@ const xarcanoid_game = (() => {
             sticky_remain -= dt;
             if (sticky_remain <= 0) {
                 sticky_remain = 0;
+                if (balls.some((item) => item.parked)) {
+                    serve_all();
+                }
                 report_hud();
             }
         }
@@ -1368,7 +1579,7 @@ const xarcanoid_game = (() => {
                 report_hud();
                 return;
             }
-            if (drop.y < bound_bottom() + 8) {
+            if (drop.y + drop.h < bound_bottom()) {
                 kept.push(drop);
             }
         });
@@ -1387,23 +1598,33 @@ const xarcanoid_game = (() => {
     }
 
     function apply_speed_gain(gain, soft_cap) {
+        let speed = max_ball_speed();
         const hard_cap = difficulty.hard_speed_cap;
-        if (ball.speed >= hard_cap) {
+        if (speed >= hard_cap) {
             return;
         }
-        if (ball.speed < soft_cap) {
-            const room = soft_cap - ball.speed;
+        if (speed < soft_cap) {
+            const room = soft_cap - speed;
             if (gain <= room) {
-                ball.speed += gain;
-                return;
+                speed += gain;
+            } else {
+                speed = soft_cap;
+                gain -= room;
+                if (gain > 0) {
+                    speed = Math.min(hard_cap, speed + Math.max(0.35, gain * 0.12));
+                }
             }
-            ball.speed = soft_cap;
-            gain -= room;
+        } else {
+            speed = Math.min(hard_cap, speed + Math.max(0.35, gain * 0.12));
         }
-        if (gain <= 0) {
-            return;
-        }
-        ball.speed = Math.min(hard_cap, ball.speed + Math.max(0.35, gain * 0.12));
+        balls.forEach((item) => {
+            const mag = Math.hypot(item.vx, item.vy);
+            item.speed = speed;
+            if (mag > 1 && !item.parked) {
+                item.vx = (item.vx / mag) * speed;
+                item.vy = (item.vy / mag) * speed;
+            }
+        });
     }
 
     function add_brick_score(base_points) {
@@ -1586,6 +1807,10 @@ const xarcanoid_game = (() => {
         ctx.fillStyle = theme.paddle_stripe;
         ctx.fillRect(paddle.x + 10, paddle.y + 6, paddle.w - 20, 2);
 
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bound_left(), bound_top(), bound_right() - bound_left(), bound_bottom() - bound_top());
+        ctx.clip();
         drops.forEach((drop) => {
             const style = power_styles[drop.kind] || power_styles.score;
             ctx.fillStyle = style.fill;
@@ -1597,17 +1822,19 @@ const xarcanoid_game = (() => {
             ctx.textBaseline = "middle";
             ctx.fillText(style.mark, drop.x + drop.w / 2, drop.y + drop.h / 2 + 0.5);
         });
-
-        ctx.beginPath();
-        ctx.fillStyle = theme.ball;
-        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = theme.paddle_glow || "#ffffff";
-        ctx.globalAlpha = 0.45;
-        ctx.beginPath();
-        ctx.arc(ball.x - 1.5, ball.y - 1.5, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
+        balls.forEach((item) => {
+            ctx.beginPath();
+            ctx.fillStyle = theme.ball;
+            ctx.arc(item.x, item.y, item.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = theme.paddle_glow || "#ffffff";
+            ctx.globalAlpha = 0.45;
+            ctx.beginPath();
+            ctx.arc(item.x - 1.5, item.y - 1.5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        });
+        ctx.restore();
     }
 
     function round_rect(x, y, w, h, r) {
@@ -1636,5 +1863,14 @@ const xarcanoid_game = (() => {
         enter_editor,
         start_from_editor,
         is_editing,
+        ticker_state() {
+            return {
+                boss: Boolean(core && core.hp > 0),
+                boss_phase: core ? core.phase : 0,
+                difficulty: difficulty.id,
+                mode: game_mode,
+                running,
+            };
+        },
     };
 })();

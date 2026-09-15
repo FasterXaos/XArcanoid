@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-09-14
+
+### Added
+
+- Twin-ball power-up. Sticky holds every ball; Space releases them one by one; when sticky ends they launch on their own.
+
+### Changed
+
+- Touch: holding a finger on the court now drags the paddle.
+- Dropdowns use rounded, theme-colored chrome.
+- Drops despawn at the inner frame instead of overlapping it.
+
+### Fixed
+
+- Boss core no longer takes a hit every frame while a ball is stuck inside.
+- Phase rebuilds wait for a wider gap around all balls and skip cells next to them.
+- Fast balls use substeps and are pushed out of bricks so they bounce instead of tunneling.
+- Falling balls clip at the inner frame like power-ups.
+- The Core rides side rails with a gap so its brick shell cannot jam into the wall.
+
 ## [0.7.0] - 2026-09-14
 
 ### Added
