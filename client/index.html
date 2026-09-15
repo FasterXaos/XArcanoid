@@ -54,6 +54,7 @@
                     <select id="mode_select">
                         <option value="campaign" selected data-i18n="mode_campaign">Кампания</option>
                         <option value="survival" data-i18n="mode_survival">Выживание</option>
+                        <option value="custom" data-i18n="mode_custom">Чертёж</option>
                     </select>
                 </label>
 
@@ -117,6 +118,8 @@
                     </div>
                 </div>
                 <button type="button" id="end_btn" class="ghost end_btn hidden" data-i18n="end_run">Завершить</button>
+                <button type="button" id="editor_start" class="end_btn hidden" data-i18n="start">Старт</button>
+                <p class="hint controls_hint hidden" id="editor_hint" data-i18n="custom_hint">Кликай по сетке: пусто → кирпич → броня.</p>
                 <p class="hint controls_hint" data-i18n="controls_hint">Мышь тоже двигает каретку. P — пауза, пробел — пауза пока шар не запущен.</p>
             </section>
         </div>

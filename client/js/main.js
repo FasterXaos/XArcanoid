@@ -30,6 +30,8 @@
     const hud_combo = document.getElementById("hud_combo");
     const hud_time = document.getElementById("hud_time");
     const end_btn = document.getElementById("end_btn");
+    const editor_start = document.getElementById("editor_start");
+    const editor_hint = document.getElementById("editor_hint");
     const leaderboard_list = document.getElementById("leaderboard_list");
     const leaderboard_empty = document.getElementById("leaderboard_empty");
     const hud_lives = document.getElementById("hud_lives");
@@ -218,7 +220,20 @@
     function render_board_button() {
         settings_board_on.classList.toggle("is_off", !show_leaderboard);
         settings_board_on.setAttribute("aria-pressed", show_leaderboard ? "true" : "false");
-        leaders_card.classList.toggle("hidden", !show_leaderboard);
+        const hide_board = !show_leaderboard || mode_select.value === "custom";
+        leaders_card.classList.toggle("hidden", hide_board);
+    }
+
+    function sync_custom_ui() {
+        const custom = mode_select.value === "custom";
+        const editing = custom && !xarcanoid_game.is_running();
+        editor_start.classList.toggle("hidden", !editing);
+        editor_hint.classList.toggle("hidden", !editing);
+        if (custom && editing) {
+            overlay.classList.add("hidden");
+            end_btn.classList.add("hidden");
+        }
+        render_board_button();
     }
 
     function open_modal(modal) {
@@ -348,6 +363,12 @@
     mode_select.addEventListener("change", () => {
         xarcanoid_game.set_game_mode(mode_select.value);
         leaders_mode_label.textContent = "· " + t("mode_" + mode_select.value);
+        if (mode_select.value !== "custom") {
+            overlay_mode = "intro";
+            overlay.classList.remove("hidden");
+            render_overlay();
+        }
+        sync_custom_ui();
         refresh_leaderboard();
     });
 
@@ -387,6 +408,20 @@
         await xarcanoid_api.logout();
         current_user = null;
         render_auth();
+    });
+
+    editor_start.addEventListener("click", () => {
+        overlay.classList.add("hidden");
+        editor_start.classList.add("hidden");
+        editor_hint.classList.add("hidden");
+        end_btn.classList.remove("hidden");
+        overlay_mode = "playing";
+        xarcanoid_game.set_difficulty(difficulty_select.value);
+        xarcanoid_game.set_game_mode("custom");
+        xarcanoid_audio.unlock();
+        xarcanoid_audio.set_ducked(false);
+        xarcanoid_audio.start_music();
+        xarcanoid_game.start_from_editor();
     });
 
     start_btn.addEventListener("click", () => {
@@ -432,6 +467,12 @@
             end_btn.classList.add("hidden");
             xarcanoid_audio.stop_music();
             xarcanoid_audio.set_ducked(false);
+            if (result.mode === "custom") {
+                overlay_mode = "edit";
+                overlay.classList.add("hidden");
+                sync_custom_ui();
+                return;
+            }
             if (!result.counts_score && !result.campaign_win) {
                 show_overlay_over(t("over_practice"));
                 return;
@@ -486,6 +527,9 @@
                 xarcanoid_audio.set_ducked(false);
                 overlay.classList.add("hidden");
                 start_btn.classList.remove("hidden");
+                if (mode_select.value === "custom") {
+                    end_btn.classList.remove("hidden");
+                }
             }
         },
     );

@@ -1,4 +1,4 @@
-**XArcanoid** 0.6.0
+**XArcanoid** 0.7.0
 
 Browser Arkanoid with registration, sessions, and a leaderboard.
 
@@ -86,7 +86,7 @@ sudo systemctl stop nginx
 - Practice: infinite lives, score is a joke glyph and is not saved
 - Standard: current default rules
 - Overdrive: 1.5× points, faster ball, one life
-- Campaign (ten stages + Core) or Survival (endless, boss every 11th)
+- Campaign (ten stages + Core), Survival (endless, boss every 11th), or Sketch (paint your own field)
 - Ten named stages on a larger court; after 10 a random layout from the set is picked
 - Broken bricks can drop power-ups (W/N/S/F/+/C/$); chance and mix depend on difficulty
 - Score uses difficulty, time, stage, remaining lives (fewer lives pay more), and combo; always floored to an integer

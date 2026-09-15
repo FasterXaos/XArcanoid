@@ -258,6 +258,9 @@ const xarcanoid_game = (() => {
     let sticky_remain = 0;
     let core = null;
     let game_mode = "campaign";
+    let editing = false;
+    let custom_grid = null;
+    let hover_cell = null;
     const BOSS_LOOK = {
         bg: "#16060c",
         wall: "#4a1420",
@@ -282,8 +285,16 @@ const xarcanoid_game = (() => {
         canvas.addEventListener("mousemove", on_mouse_move);
         canvas.addEventListener("mouseleave", () => {
             mouse_x = null;
+            if (editing) {
+                hover_cell = null;
+                draw();
+            }
         });
-        canvas.addEventListener("click", () => {
+        canvas.addEventListener("click", (event) => {
+            if (editing) {
+                paint_custom_cell(event);
+                return;
+            }
             if (running && waiting_serve && pause_state === "off") {
                 serve_ball();
             }
@@ -325,7 +336,146 @@ const xarcanoid_game = (() => {
     }
 
     function set_game_mode(id) {
-        game_mode = id === "survival" ? "survival" : "campaign";
+        if (id === "survival") {
+            game_mode = "survival";
+        } else if (id === "custom") {
+            game_mode = "custom";
+        } else {
+            game_mode = "campaign";
+        }
+        if (game_mode === "custom" && !running) {
+            enter_editor();
+        } else if (game_mode !== "custom") {
+            editing = false;
+            hover_cell = null;
+        }
+    }
+
+    function ensure_custom_grid() {
+        if (custom_grid) {
+            return;
+        }
+        const grid = grid_metrics();
+        custom_grid = [];
+        for (let row = 0; row < grid.rows; row += 1) {
+            custom_grid.push(Array(grid.cols).fill(0));
+        }
+    }
+
+    function enter_editor() {
+        editing = true;
+        running = false;
+        core = null;
+        drops = [];
+        pause_state = "off";
+        if (typeof xarcanoid_audio !== "undefined") {
+            xarcanoid_audio.set_boss_phase(0);
+            xarcanoid_audio.stop_music();
+        }
+        ensure_custom_grid();
+        bricks = build_custom_bricks();
+        paddle.w = difficulty.paddle_width;
+        paddle.y = bound_bottom() - 20;
+        paddle.x = clamp((width - paddle.w) / 2, bound_left(), bound_right() - paddle.w);
+        park_ball();
+        draw();
+        report_hud();
+    }
+
+    function cell_at(mx, my) {
+        const grid = grid_metrics();
+        const col = Math.floor((mx - grid.side) / (grid.brick_w + grid.gap));
+        const row = Math.floor((my - grid.top) / (grid.brick_h + grid.gap));
+        if (row < 0 || col < 0 || row >= grid.rows || col >= grid.cols) {
+            return null;
+        }
+        const rect = cell_rect(grid, col, row);
+        if (mx > rect.x + rect.w || my > rect.y + rect.h) {
+            return null;
+        }
+        return { row, col };
+    }
+
+    function paint_custom_cell(event) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = (event.clientX - rect.left) * (width / rect.width);
+        const my = (event.clientY - rect.top) * (height / rect.height);
+        const cell = cell_at(mx, my);
+        if (!cell) {
+            return;
+        }
+        ensure_custom_grid();
+        custom_grid[cell.row][cell.col] = (custom_grid[cell.row][cell.col] + 1) % 3;
+        bricks = build_custom_bricks();
+        draw();
+    }
+
+    function build_custom_bricks() {
+        ensure_custom_grid();
+        const grid = grid_metrics();
+        const list = [];
+        for (let row = 0; row < grid.rows; row += 1) {
+            for (let col = 0; col < grid.cols; col += 1) {
+                const cell = custom_grid[row][col];
+                if (!cell) {
+                    continue;
+                }
+                const rect = cell_rect(grid, col, row);
+                const hp = cell === 2 ? 2 : 1;
+                list.push({
+                    x: rect.x,
+                    y: rect.y,
+                    w: rect.w,
+                    h: rect.h,
+                    row,
+                    col,
+                    hp,
+                    color: theme.bricks[row % 5] || theme.bricks[0],
+                    points: brick_points[Math.min(row, brick_points.length - 1)] * hp,
+                    alive: true,
+                });
+            }
+        }
+        return list;
+    }
+
+    function start_from_editor() {
+        if (game_mode !== "custom") {
+            return;
+        }
+        difficulty = difficulties[selected_difficulty_id] || difficulties.standard;
+        score = 0;
+        combo = 0;
+        max_combo = 0;
+        elapsed_s = 0;
+        last_hud_second = -1;
+        lives = difficulty.lives;
+        level = 1;
+        drops = [];
+        size_effect = null;
+        sticky_remain = 0;
+        core = null;
+        editing = false;
+        hover_cell = null;
+        paddle.w = difficulty.paddle_width;
+        ball.speed = difficulty.start_speed;
+        bricks = build_custom_bricks();
+        paddle.y = bound_bottom() - 20;
+        paddle.x = clamp((width - paddle.w) / 2, bound_left(), bound_right() - paddle.w);
+        park_ball();
+        running = true;
+        waiting_serve = true;
+        pause_state = "countdown";
+        countdown_left = 1.5;
+        last_countdown_number = 0;
+        report_countdown();
+        report_hud();
+        last_ts = 0;
+        requestAnimationFrame(tick);
+    }
+
+    function is_editing() {
+        return editing;
     }
 
     function debug_clear_stage() {
@@ -514,7 +664,13 @@ const xarcanoid_game = (() => {
     function on_mouse_move(event) {
         const rect = canvas.getBoundingClientRect();
         const scale = width / rect.width;
-        mouse_x = (event.clientX - rect.left) * scale;
+        const mx = (event.clientX - rect.left) * scale;
+        const my = (event.clientY - rect.top) * (height / rect.height);
+        mouse_x = mx;
+        if (editing) {
+            hover_cell = cell_at(mx, my);
+            draw();
+        }
     }
 
     function reset_round(rebuild_bricks) {
@@ -561,6 +717,9 @@ const xarcanoid_game = (() => {
     }
 
     function build_bricks() {
+        if (game_mode === "custom") {
+            return build_custom_bricks();
+        }
         if (is_boss_level(level)) {
             return build_boss();
         }
@@ -975,6 +1134,10 @@ const xarcanoid_game = (() => {
         }
 
         if ((!core || core.hp <= 0) && !bricks.some((brick) => brick.alive)) {
+            if (game_mode === "custom") {
+                finish(true);
+                return;
+            }
             advance_level();
         }
     }
@@ -1266,6 +1429,9 @@ const xarcanoid_game = (() => {
         waiting_serve = true;
         pause_state = "off";
         drops = [];
+        if (game_mode === "custom") {
+            enter_editor();
+        }
         size_effect = null;
         sticky_remain = 0;
         play_sfx(won ? "level" : "over");
@@ -1373,6 +1539,23 @@ const xarcanoid_game = (() => {
         ctx.lineWidth = FRAME;
         ctx.strokeRect(FRAME / 2, FRAME / 2, width - FRAME, height - FRAME);
 
+        if (editing) {
+            const grid = grid_metrics();
+            ctx.strokeStyle = "rgba(180, 200, 220, 0.35)";
+            ctx.lineWidth = 1;
+            for (let row = 0; row < grid.rows; row += 1) {
+                for (let col = 0; col < grid.cols; col += 1) {
+                    const rect = cell_rect(grid, col, row);
+                    ctx.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1);
+                }
+            }
+            if (hover_cell) {
+                const rect = cell_rect(grid, hover_cell.col, hover_cell.row);
+                ctx.fillStyle = "rgba(62, 198, 255, 0.22)";
+                ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+            }
+        }
+
         for (const brick of bricks) {
             if (!brick.alive) {
                 continue;
@@ -1450,5 +1633,8 @@ const xarcanoid_game = (() => {
         set_difficulty,
         set_game_mode,
         debug_clear_stage,
+        enter_editor,
+        start_from_editor,
+        is_editing,
     };
 })();
