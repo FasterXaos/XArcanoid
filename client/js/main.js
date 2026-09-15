@@ -50,6 +50,7 @@
     let last_over = null;
     let last_auth_error = "";
     let leaderboard_failed = false;
+    let my_rank = null;
     let show_leaderboard = localStorage.getItem("xarcanoid_show_board") !== "0";
 
     function t(key, vars) {
@@ -91,12 +92,17 @@
     function render_leaderboard(entries) {
         leaderboard_list.innerHTML = "";
         if (!entries.length) {
+            my_rank = null;
             leaderboard_empty.classList.remove("hidden");
             leaderboard_empty.textContent = t("leaderboard_empty");
             return;
         }
         leaderboard_empty.classList.add("hidden");
+        my_rank = null;
         entries.forEach((entry, index) => {
+            if (current_user && entry.username === current_user.username) {
+                my_rank = index + 1;
+            }
             const item = document.createElement("li");
             const diff_key = "diff_tag_" + (entry.difficulty || "standard");
             item.innerHTML =
@@ -548,6 +554,24 @@
     xarcanoid_game.set_game_mode(mode_select.value);
     xarcanoid_i18n.load();
     apply_language();
+    xarcanoid_ticker.start(
+        document.getElementById("ticker_track"),
+        document.getElementById("ticker_text"),
+        () => {
+            const state = xarcanoid_game.ticker_state();
+            return {
+                lang: xarcanoid_i18n.lang,
+                difficulty: difficulty_select.value,
+                mode: mode_select.value,
+                theme: xarcanoid_themes.current_id,
+                music: xarcanoid_audio.is_music_on(),
+                sfx: xarcanoid_audio.is_sfx_on(),
+                boss: state.boss,
+                boss_phase: state.boss_phase,
+                rank: my_rank,
+            };
+        },
+    );
     refresh_session().catch((error) => set_auth_error(error.message));
     refresh_leaderboard();
 })();

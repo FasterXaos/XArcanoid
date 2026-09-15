@@ -41,9 +41,34 @@ body {
 }
 
 .top_bar {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.ticker {
+    overflow: hidden;
+    height: 32px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--input-bg);
+}
+
+.ticker_track {
+    height: 100%;
     display: flex;
-    align-items: baseline;
-    margin-bottom: 20px;
+    align-items: center;
+}
+
+.ticker_track span {
+    display: inline-block;
+    padding: 0 12px;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--muted);
+    will-change: transform;
 }
 
 .brand {
@@ -551,11 +576,8 @@ canvas {
 }
 
 @media (max-width: 860px) {
-    .layout {
-        grid-template-columns: 1fr;
-    }
-
+    .layout,
     .top_bar {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
 }
