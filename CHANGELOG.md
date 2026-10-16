@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Browser direction of 1.0.0 for itch.io. The cloud build stays on `master`.
 
+### Added
+
+- Cover image for the itch.io page (`assets/cover.png`).
+
 ### Changed
 
 - The page signs in as You. Scores and achievements stay in this browser.
