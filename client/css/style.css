@@ -94,6 +94,14 @@ h1 {
     text-transform: uppercase;
 }
 
+.version {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: none;
+}
+
 h2 {
     font-size: 13px;
     color: var(--muted);

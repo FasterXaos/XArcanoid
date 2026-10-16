@@ -1,3 +1,24 @@
+**XArcanoid** 1.0.0.itch
+
+Browser build for itch.io. The page signs in as You. Scores, achievements, and the guide stay in the browser. `master` is the cloud version with accounts and SQLite.
+
+## Play this branch
+
+From the project directory:
+
+```powershell
+python tools/pack_itch.py
+python -m http.server 8080 --directory dist/itch
+```
+
+Open http://127.0.0.1:8080/
+
+Upload `dist/xarcanoid-1.0.0.itch.zip` to itch.io as an HTML project. `index.html` is at the root of the zip. Set the embed near 1200×860 and turn on fullscreen.
+
+## Cloud version
+
+The Flask app below is still in the tree, and this branch's page does not call it. Deploy the VM from `master`.
+
 **XArcanoid** 1.0.0
 
 Browser Arkanoid with registration, sessions, and a leaderboard.

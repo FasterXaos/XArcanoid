@@ -8,3 +8,4 @@ data/
 .vscode/
 *.log
 deploy/xarcanoid.env
+dist/

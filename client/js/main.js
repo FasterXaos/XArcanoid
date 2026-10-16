@@ -78,7 +78,7 @@
             player_name.textContent = current_user.username;
             player_name.classList.remove("hidden");
             auth_form.classList.add("hidden");
-            logout_btn.classList.remove("hidden");
+            logout_btn.classList.add("hidden");
         } else {
             auth_card.classList.remove("signed_in");
             player_name.textContent = "";
@@ -335,7 +335,10 @@
         }
         changelog_text.textContent = t("guide_log_loading");
         try {
-            const response = await fetch("/changelog");
+            let response = await fetch("CHANGELOG.md");
+            if (!response.ok) {
+                response = await fetch("/changelog");
+            }
             if (!response.ok) {
                 throw new Error("fail");
             }
@@ -505,11 +508,8 @@
         submit_auth("register");
     });
 
-    logout_btn.addEventListener("click", async () => {
-        await xarcanoid_api.logout();
-        current_user = null;
-        render_auth();
-        load_achievements();
+    logout_btn.addEventListener("click", () => {
+        refresh_session().catch((error) => set_auth_error(error.message));
     });
 
     editor_start.addEventListener("click", () => {

@@ -76,18 +76,6 @@ const xarcanoid_achievements = {
                     tip.appendChild(extra);
                 }
             }
-            const percent = document.createElement("div");
-            percent.className = "ach_tip_percent";
-            if (!data.holders) {
-                percent.textContent = t("ach_percent_none");
-            } else {
-                percent.textContent = t("ach_percent", {
-                    percent: String(data.percent),
-                    holders: String(data.holders),
-                    players: String(data.players || 0),
-                });
-            }
-            tip.appendChild(percent);
             document.body.appendChild(tip);
             const box = tile.getBoundingClientRect();
             const tip_box = tip.getBoundingClientRect();

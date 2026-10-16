@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0.itch] - 2026-10-12
+
+Browser direction of 1.0.0 for itch.io. The cloud build stays on `master`.
+
+### Changed
+
+- The page signs in as You. Scores and achievements stay in this browser.
+- The board is filled with a fixed cast. You joins it after a saved run.
+- "New player" is unlocked on arrival. Its description is "Join the game".
+- Achievement rarity percentages are hidden.
+
 ## [1.0.0] - 2026-09-14
 
 ### Added
